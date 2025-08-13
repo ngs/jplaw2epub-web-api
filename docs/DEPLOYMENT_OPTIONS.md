@@ -36,7 +36,7 @@ This is the simplest method. Cloud Run builds your container automatically.
 
 **Usage:**
 ```bash
-gcloud run deploy jplaw2epub-server \
+gcloud run deploy jplaw2epub-api \
   --source . \
   --region=asia-northeast1
 ```
@@ -177,10 +177,10 @@ If you want to migrate from one method to another:
 2. Update image URLs in workflows:
 ```yaml
 # Old (GCR)
-IMAGE_TAG="gcr.io/${PROJECT_ID}/jplaw2epub-server:latest"
+IMAGE_TAG="gcr.io/${PROJECT_ID}/jplaw2epub-api:latest"
 
 # New (Artifact Registry)
-IMAGE_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/jplaw2epub-server:latest"
+IMAGE_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/jplaw2epub-api:latest"
 ```
 
 3. Update cloudbuild.yaml to use `cloudbuild-ar.yaml`
@@ -208,10 +208,10 @@ Before deploying, test locally:
 
 ```bash
 # Build Docker image
-docker build -t jplaw2epub-server:test .
+docker build -t jplaw2epub-api:test .
 
 # Run locally
-docker run -p 8080:8080 -e PORT=8080 jplaw2epub-server:test
+docker run -p 8080:8080 -e PORT=8080 jplaw2epub-api:test
 
 # Test
 curl http://localhost:8080/health
@@ -225,7 +225,7 @@ Check deployment status:
 gcloud run services list --region=asia-northeast1
 
 # View deployment logs
-gcloud run services logs jplaw2epub-server --region=asia-northeast1
+gcloud run services logs jplaw2epub-api --region=asia-northeast1
 
 # View Cloud Build history
 gcloud builds list --limit=5
@@ -237,11 +237,11 @@ If deployment fails:
 
 ```bash
 # List revisions
-gcloud run revisions list --service=jplaw2epub-server --region=asia-northeast1
+gcloud run revisions list --service=jplaw2epub-api --region=asia-northeast1
 
 # Rollback to previous revision
-gcloud run services update-traffic jplaw2epub-server \
-  --to-revisions=jplaw2epub-server-00001-abc=100 \
+gcloud run services update-traffic jplaw2epub-api \
+  --to-revisions=jplaw2epub-api-00001-abc=100 \
   --region=asia-northeast1
 ```
 

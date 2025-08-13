@@ -5,7 +5,7 @@ set -euo pipefail
 # Configuration
 PROJECT_ID="${PROJECT_ID:-}"
 REGION="${REGION:-asia-northeast1}"
-SERVICE_NAME="${SERVICE_NAME:-jplaw2epub-server}"
+SERVICE_NAME="${SERVICE_NAME:-jplaw2epub-api}"
 DOMAIN="${DOMAIN:-}"
 
 # Colors for output

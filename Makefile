@@ -11,7 +11,7 @@ run: ## Run the server locally
 
 .PHONY: build
 build: ## Build the binary
-	go build -o jplaw2epub-server .
+	go build -o jplaw2epub-api .
 
 .PHONY: test
 test: ## Run tests
@@ -28,7 +28,7 @@ fmt: ## Format code
 
 .PHONY: clean
 clean: ## Clean build artifacts
-	rm -f jplaw2epub-server
+	rm -f jplaw2epub-api
 	go clean
 
 .PHONY: deps
@@ -38,11 +38,11 @@ deps: ## Download dependencies
 
 .PHONY: docker-build
 docker-build: ## Build Docker image
-	docker build -t jplaw2epub-server .
+	docker build -t jplaw2epub-api .
 
 .PHONY: docker-run
 docker-run: ## Run Docker container
-	docker run -p 8080:8080 jplaw2epub-server
+	docker run -p 8080:8080 jplaw2epub-api
 
 .PHONY: gqlgen
 gqlgen: ## Generate GraphQL code

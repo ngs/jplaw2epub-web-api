@@ -22,7 +22,7 @@ make fmt lint
 
 # Build and run
 make build
-./jplaw2epub-server
+./jplaw2epub-api
 ```
 
 ## Installation
@@ -45,13 +45,13 @@ make build
 
 ```sh
 # Use automatic port selection
-./jplaw2epub-server
+./jplaw2epub-api
 
 # Specify port via flag
-./jplaw2epub-server -port 8080
+./jplaw2epub-api -port 8080
 
 # Using environment variable
-PORT=8080 ./jplaw2epub-server
+PORT=8080 ./jplaw2epub-api
 
 # Using Make
 make run
@@ -253,7 +253,7 @@ make test
 
 # Build and run
 make build
-./jplaw2epub-server
+./jplaw2epub-api
 
 # Or run directly
 make run
@@ -269,58 +269,71 @@ make docker-build
 make docker-run
 
 # Or manually
-docker build -t jplaw2epub-server .
-docker run -p 8080:8080 jplaw2epub-server
+docker build -t jplaw2epub-api .
+docker run -p 8080:8080 jplaw2epub-api
 ```
 
 ## Google Cloud Run Deployment
 
-### Prerequisites
+### 🚀 Quick Setup
 
-- Google Cloud SDK installed
-- Project configured
-- Cloud Run API enabled
-
-### Manual Deployment
+See [docs/SETUP.md](docs/SETUP.md) for complete setup guide.
 
 ```bash
-# 1. Build container image
+# 1. Set environment variables
+export PROJECT_ID="your-gcp-project-id"
+export GITHUB_ORG="your-github-username"
+export GITHUB_REPO="jplaw2epub-web-api"
+
+# 2. Setup Workload Identity Federation
+chmod +x scripts/setup-workload-identity.sh
+./scripts/setup-workload-identity.sh
+
+# 3. Setup Artifact Registry (optional)
+chmod +x scripts/setup-artifact-registry.sh
+./scripts/setup-artifact-registry.sh
+
+# 4. Configure GitHub secrets
+# Add WIF_PROVIDER, WIF_SERVICE_ACCOUNT, PROJECT_ID
+```
+
+### Deployment Methods
+
+#### Method 1: GitHub Actions (Recommended)
+
+Automatic deployment on push to main/master:
+```bash
+git push origin main
+```
+
+Manual deployment available via GitHub Actions UI.
+
+#### Method 2: Deploy from Source (Simplest)
+
+```bash
+gcloud run deploy jplaw2epub-api \
+  --source . \
+  --region=asia-northeast1 \
+  --allow-unauthenticated
+```
+
+#### Method 3: Via Cloud Build
+
+```bash
 gcloud builds submit \
-  --tag gcr.io/YOUR_PROJECT_ID/jplaw2epub-server
-
-# 2. Deploy to Cloud Run
-gcloud run deploy jplaw2epub-server \
-  --image gcr.io/YOUR_PROJECT_ID/jplaw2epub-server \
-  --region asia-northeast1 \
-  --platform managed \
-  --allow-unauthenticated \
-  --port 8080 \
-  --memory 512Mi \
-  --max-instances 10 \
-  --min-instances 0 \
-  --timeout 60
+  --config=cloudbuild.yaml \
+  --region=asia-northeast1
 ```
 
-### Automated Deployment with Cloud Build
+### Custom Domain Setup (Optional)
 
 ```bash
-gcloud builds submit \
-  --config cloudbuild.yaml \
-  --substitutions=_REGION=asia-northeast1
+export DOMAIN="api.yourdomain.com"
+chmod +x scripts/setup-custom-domain.sh
+./scripts/setup-custom-domain.sh
 ```
 
-### Continuous Deployment with GitHub
-
-1. Create Cloud Build trigger
-```bash
-gcloud builds triggers create github \
-  --repo-name=jplaw2epub-web-api \
-  --repo-owner=YOUR_GITHUB_USERNAME \
-  --branch-pattern="^main$" \
-  --build-config=cloudbuild.yaml
-```
-
-2. Automatic deployment will run on push to main branch
+See [docs/CUSTOM_DOMAIN_SETUP.md](docs/CUSTOM_DOMAIN_SETUP.md) for details.
 
 ## Environment Variables
 
@@ -340,13 +353,13 @@ gcloud builds triggers create github \
 ### Out of Memory Error
 For large XML files, increase Cloud Run memory:
 ```bash
-gcloud run services update jplaw2epub-server --memory 1Gi
+gcloud run services update jplaw2epub-api --memory 1Gi
 ```
 
 ### Timeout Error
 For longer processing times, extend timeout:
 ```bash
-gcloud run services update jplaw2epub-server --timeout 300
+gcloud run services update jplaw2epub-api --timeout 300
 ```
 
 ## Dependencies

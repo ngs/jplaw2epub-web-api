@@ -19,7 +19,7 @@ This guide explains how to set up a custom domain for your Cloud Run service.
 export PROJECT_ID="your-gcp-project-id"
 export DOMAIN="api.yourdomain.com"  # Your custom domain
 export REGION="asia-northeast1"     # Your Cloud Run region
-export SERVICE_NAME="jplaw2epub-server"  # Your Cloud Run service name
+export SERVICE_NAME="jplaw2epub-api"  # Your Cloud Run service name
 ```
 
 #### 2. Run the Setup Script
@@ -88,7 +88,7 @@ The verification script will check:
 
 ```bash
 gcloud run domain-mappings create \
-    --service=jplaw2epub-server \
+    --service=jplaw2epub-api \
     --domain=api.yourdomain.com \
     --region=asia-northeast1
 ```
@@ -178,7 +178,7 @@ To add multiple domains to the same service:
 ```bash
 # Add additional domain
 gcloud run domain-mappings create \
-    --service=jplaw2epub-server \
+    --service=jplaw2epub-api \
     --domain=www.yourdomain.com \
     --region=asia-northeast1
 

@@ -60,7 +60,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
-            -t jplaw2epub-server:test \
+            -t jplaw2epub-api:test \
             -f Dockerfile \
             .
 
@@ -71,7 +71,7 @@ jobs:
             --name test-server \
             -p 8080:8080 \
             -e PORT=8080 \
-            jplaw2epub-server:test
+            jplaw2epub-api:test
 
           # Wait for server to be ready
           echo "Waiting for server to start..."

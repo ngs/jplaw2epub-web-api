@@ -11,7 +11,7 @@ RUN go mod download
 COPY . .
 
 # Build the server binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o jplaw2epub-server .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o jplaw2epub-api .
 
 # Final stage
 FROM alpine:latest
@@ -22,7 +22,7 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 # Copy the binary from builder stage
-COPY --from=builder /app/jplaw2epub-server .
+COPY --from=builder /app/jplaw2epub-api .
 
 # Expose port
 EXPOSE 8080
@@ -31,4 +31,4 @@ EXPOSE 8080
 ENV PORT=8080
 
 # Run the server
-CMD ["./jplaw2epub-server"]
+CMD ["./jplaw2epub-api"]
