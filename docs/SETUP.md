@@ -20,36 +20,29 @@ export GITHUB_REPO="jplaw2epub-web-api"
 export REGION="asia-northeast1"
 ```
 
-### 2. Setup Workload Identity Federation
-
-Configure secure authentication from GitHub Actions to GCP:
+### 2. Run Complete Setup
 
 ```bash
-# Grant execute permission to script
-chmod +x scripts/setup-workload-identity.sh
+# Grant execute permission
+chmod +x scripts/gcp-setup.sh
 
-# Run setup
-./scripts/setup-workload-identity.sh
+# Run complete setup
+./scripts/gcp-setup.sh all
+
+# Or run specific commands
+./scripts/gcp-setup.sh status      # Check current status
+./scripts/gcp-setup.sh wif         # Setup Workload Identity only
+./scripts/gcp-setup.sh permissions # Fix permissions only
+./scripts/gcp-setup.sh registry    # Setup Artifact Registry only
+./scripts/gcp-setup.sh help        # Show help
 ```
 
-Add the following values output by the script to GitHub secrets:
+The script will output the values needed for GitHub secrets:
 - `WIF_PROVIDER`
 - `WIF_SERVICE_ACCOUNT`
 - `PROJECT_ID`
 
-### 3. Setup Artifact Registry
-
-Create a repository for storing Docker images:
-
-```bash
-# Grant execute permission to script
-chmod +x scripts/setup-artifact-registry.sh
-
-# Run setup
-./scripts/setup-artifact-registry.sh
-```
-
-### 4. Configure GitHub Secrets
+### 3. Configure GitHub Secrets
 
 Add the following in GitHub repository Settings → Secrets and variables → Actions:
 
@@ -108,12 +101,8 @@ To use a custom domain:
 # Set environment variables
 export DOMAIN="api.yourdomain.com"
 
-# Run setup script
-chmod +x scripts/setup-custom-domain.sh
-./scripts/setup-custom-domain.sh
-
-# After configuring DNS records, run verification
-./scripts/verify-custom-domain.sh
+# Run domain setup
+./scripts/gcp-setup.sh domain
 ```
 
 ## 🏗️ Architecture
@@ -149,12 +138,14 @@ Unified deployment workflow supporting three deployment methods:
 
 Cloud Build configuration file. Uses Artifact Registry to build, push, and deploy images.
 
-### scripts/
+### scripts/gcp-setup.sh
 
-- `setup-workload-identity.sh`: Setup WIF authentication
-- `setup-artifact-registry.sh`: Setup Docker registry
-- `setup-custom-domain.sh`: Configure custom domain
-- `verify-custom-domain.sh`: Verify domain configuration
+Unified setup tool that handles all GCP configuration:
+- Workload Identity Federation setup
+- IAM permissions configuration
+- Artifact Registry setup
+- Custom domain configuration
+- Status checking and verification
 
 ## 📊 Monitoring
 
@@ -187,17 +178,18 @@ gcloud run revisions list --service=jplaw2epub-api --region=asia-northeast1
 
 ```bash
 # Create Artifact Registry repository
-./scripts/setup-artifact-registry.sh
+./scripts/gcp-setup.sh registry
 ```
 
 #### 2. Authentication Error
 
 ```bash
-# Reconfigure WIF
-./scripts/setup-workload-identity.sh
+# Reconfigure WIF and permissions
+./scripts/gcp-setup.sh wif
+./scripts/gcp-setup.sh permissions
 
-# Check permissions
-gcloud projects get-iam-policy $PROJECT_ID
+# Check current status
+./scripts/gcp-setup.sh status
 ```
 
 #### 3. Storage Permission Error
@@ -205,9 +197,8 @@ gcloud projects get-iam-policy $PROJECT_ID
 If you see: `Permission 'storage.buckets.create' denied`
 
 ```bash
-# Fix permissions for existing service account
-chmod +x scripts/fix-permissions.sh
-./scripts/fix-permissions.sh
+# Fix all permissions
+./scripts/gcp-setup.sh permissions
 
 # Or manually add the role
 gcloud projects add-iam-policy-binding ${PROJECT_ID} \
@@ -220,10 +211,9 @@ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 If you see: `Build failed because the default service account is missing required IAM permissions`
 
 ```bash
-# Fix all Cloud Build permissions
+# Fix all permissions including Cloud Build
 export PROJECT_ID="your-project-id"
-chmod +x scripts/fix-cloud-build-permissions.sh
-./scripts/fix-cloud-build-permissions.sh
+./scripts/gcp-setup.sh permissions
 
 # Wait 2-3 minutes for permissions to propagate
 sleep 180

@@ -285,16 +285,13 @@ export PROJECT_ID="your-gcp-project-id"
 export GITHUB_ORG="your-github-username"
 export GITHUB_REPO="jplaw2epub-web-api"
 
-# 2. Setup Workload Identity Federation
-chmod +x scripts/setup-workload-identity.sh
-./scripts/setup-workload-identity.sh
+# 2. Run setup
+chmod +x scripts/gcp-setup.sh
+./scripts/gcp-setup.sh all
 
-# 3. Setup Artifact Registry (optional)
-chmod +x scripts/setup-artifact-registry.sh
-./scripts/setup-artifact-registry.sh
-
-# 4. Configure GitHub secrets
+# 3. Configure GitHub secrets
 # Add WIF_PROVIDER, WIF_SERVICE_ACCOUNT, PROJECT_ID
+# (Values are displayed by the setup script)
 ```
 
 ### Deployment Methods
@@ -329,8 +326,7 @@ gcloud builds submit \
 
 ```bash
 export DOMAIN="api.yourdomain.com"
-chmod +x scripts/setup-custom-domain.sh
-./scripts/setup-custom-domain.sh
+./scripts/gcp-setup.sh domain
 ```
 
 See [docs/CUSTOM_DOMAIN_SETUP.md](docs/CUSTOM_DOMAIN_SETUP.md) for details.

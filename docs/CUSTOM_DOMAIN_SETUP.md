@@ -22,14 +22,11 @@ export REGION="asia-northeast1"     # Your Cloud Run region
 export SERVICE_NAME="jplaw2epub-api"  # Your Cloud Run service name
 ```
 
-#### 2. Run the Setup Script
+#### 2. Run the Domain Setup
 
 ```bash
-# Make the script executable
-chmod +x scripts/setup-custom-domain.sh
-
-# Run the setup
-./scripts/setup-custom-domain.sh
+# Run domain setup
+./scripts/gcp-setup.sh domain
 ```
 
 The script will:
@@ -60,11 +57,8 @@ Add the DNS records shown by the script to your domain provider:
 After configuring DNS (wait 10-30 minutes for propagation):
 
 ```bash
-# Make the script executable
-chmod +x scripts/verify-custom-domain.sh
-
-# Run verification
-./scripts/verify-custom-domain.sh
+# Check status including domain
+./scripts/gcp-setup.sh status
 ```
 
 The verification script will check:
