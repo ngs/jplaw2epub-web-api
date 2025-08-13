@@ -34,6 +34,7 @@ chmod +x scripts/gcp-setup.sh
 ./scripts/gcp-setup.sh wif         # Setup Workload Identity only
 ./scripts/gcp-setup.sh permissions # Fix permissions only
 ./scripts/gcp-setup.sh registry    # Setup Artifact Registry only
+./scripts/gcp-setup.sh public      # Allow public access to service
 ./scripts/gcp-setup.sh help        # Show help
 ```
 

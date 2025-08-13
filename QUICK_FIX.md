@@ -53,6 +53,31 @@ This happens when trying to set PORT environment variable.
 Solution: Remove `--set-env-vars="PORT=8080"` from deployment commands.
 Cloud Run automatically sets the PORT variable.
 
+#### 403 Forbidden error
+Service is deployed but not publicly accessible.
+```bash
+./scripts/gcp-setup.sh public
+```
+
+#### Domain setup fails
+```bash
+# Check existing domain mappings
+./scripts/gcp-setup.sh domain-list
+
+# Delete problematic mapping if needed
+export DOMAIN=api.yourdomain.com
+./scripts/gcp-setup.sh domain-delete
+
+# Try setup again
+./scripts/gcp-setup.sh domain
+```
+
+Common domain issues:
+- Domain verification required - verify in Google Search Console
+- Domain format - use 'api.example.com' not 'https://api.example.com'
+- Service must be deployed first
+- Note: Domain mapping commands require 'gcloud beta' for fully managed Cloud Run
+
 ### 5. Check Status
 
 ```bash

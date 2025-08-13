@@ -78,10 +78,12 @@ The verification script will check:
 
 ### Method 3: Manual Setup via CLI
 
+**Note:** Domain mapping commands require `gcloud beta` for fully managed Cloud Run.
+
 #### 1. Create Domain Mapping
 
 ```bash
-gcloud run domain-mappings create \
+gcloud beta run domain-mappings create \
     --service=jplaw2epub-api \
     --domain=api.yourdomain.com \
     --region=asia-northeast1
@@ -90,7 +92,7 @@ gcloud run domain-mappings create \
 #### 2. Get DNS Configuration
 
 ```bash
-gcloud run domain-mappings describe \
+gcloud beta run domain-mappings describe \
     --domain=api.yourdomain.com \
     --region=asia-northeast1
 ```
@@ -101,7 +103,7 @@ Based on the output, configure your DNS:
 
 ```bash
 # View required DNS records
-gcloud run domain-mappings describe \
+gcloud beta run domain-mappings describe \
     --domain=api.yourdomain.com \
     --region=asia-northeast1 \
     --format="value(status.resourceRecords[].type,status.resourceRecords[].rrdata)"
@@ -171,13 +173,13 @@ To add multiple domains to the same service:
 
 ```bash
 # Add additional domain
-gcloud run domain-mappings create \
+gcloud beta run domain-mappings create \
     --service=jplaw2epub-api \
     --domain=www.yourdomain.com \
     --region=asia-northeast1
 
 # List all domain mappings
-gcloud run domain-mappings list --region=asia-northeast1
+gcloud beta run domain-mappings list --region=asia-northeast1
 ```
 
 ## Troubleshooting
@@ -205,7 +207,7 @@ If SSL certificate remains pending:
 1. Verify DNS records are correctly configured
 2. Check domain mapping status:
 ```bash
-gcloud run domain-mappings describe \
+gcloud beta run domain-mappings describe \
     --domain=api.yourdomain.com \
     --region=asia-northeast1 \
     --format="get(status)"
@@ -224,7 +226,7 @@ Common errors and solutions:
 **"Domain mapping already exists"**
 - Delete existing mapping and recreate:
 ```bash
-gcloud run domain-mappings delete \
+gcloud beta run domain-mappings delete \
     --domain=api.yourdomain.com \
     --region=asia-northeast1
 ```
@@ -245,7 +247,7 @@ To remove a custom domain:
 
 ```bash
 # Delete domain mapping
-gcloud run domain-mappings delete \
+gcloud beta run domain-mappings delete \
     --domain=api.yourdomain.com \
     --region=asia-northeast1
 
@@ -268,7 +270,7 @@ Add domain verification to your deployment workflow:
 # .github/workflows/deploy.yml
 - name: Verify custom domain
   run: |
-    DOMAIN_STATUS=$(gcloud run domain-mappings describe \
+    DOMAIN_STATUS=$(gcloud beta run domain-mappings describe \
       --domain=${{ secrets.CUSTOM_DOMAIN }} \
       --region=${{ env.REGION }} \
       --format="value(status.certificates[].status)")
