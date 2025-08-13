@@ -1,0 +1,58 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/jplaw2epub-server:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/jplaw2epub-server:latest'
+      - '-f'
+      - 'Dockerfile'
+      - '.'
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'gcr.io/$PROJECT_ID/jplaw2epub-server'
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'jplaw2epub-server'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/jplaw2epub-server:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+      - '--memory'
+      - '512Mi'
+      - '--max-instances'
+      - '10'
+      - '--min-instances'
+      - '0'
+      - '--timeout'
+      - '60'
+
+# Build configuration options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+# Substitutions (can be overridden at build time)
+substitutions:
+  _REGION: asia-northeast1
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/jplaw2epub-server:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/jplaw2epub-server:latest'
