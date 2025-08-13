@@ -47,7 +47,7 @@ jobs:
         run: go mod download
 
       - name: Build server
-        run: go build -v ./cmd/jplaw2epub-server
+        run: go build -v .
 
   docker:
     name: Build and Test Docker
