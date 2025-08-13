@@ -52,6 +52,7 @@ Add the following in GitHub repository Settings → Secrets and variables → Ac
 | `PROJECT_ID` | your-project-id | GCP Project ID |
 | `WIF_PROVIDER` | projects/... | Workload Identity Provider |
 | `WIF_SERVICE_ACCOUNT` | github-actions-sa@... | Service Account |
+| `CORS_ORIGINS` | https://example.com,https://app.example.com | (Optional) Comma-separated CORS origins |
 
 ## 📦 Deployment Methods
 

@@ -44,6 +44,18 @@ docker-build: ## Build Docker image
 docker-run: ## Run Docker container
 	docker run -p 8080:8080 jplaw2epub-api
 
+.PHONY: docker-run-cors
+docker-run-cors: ## Run Docker container with CORS enabled for all origins
+	docker run -p 8080:8080 jplaw2epub-api -cors-origins "*"
+
+.PHONY: docker-compose-up
+docker-compose-up: ## Run with docker-compose
+	docker-compose up
+
+.PHONY: docker-compose-dev
+docker-compose-dev: ## Run development profile with docker-compose
+	docker-compose --profile dev up
+
 .PHONY: gqlgen
 gqlgen: ## Generate GraphQL code
 	cd graphql && go run github.com/99designs/gqlgen generate

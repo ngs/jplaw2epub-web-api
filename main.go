@@ -24,17 +24,20 @@ import (
 
 func main() {
 	portFlag := flag.String("port", "", "Port to listen on (default: find available port)")
+	corsOriginsFlag := flag.String("cors-origins", "", "Comma-separated list of allowed CORS origins (e.g., 'https://example.com,https://app.example.com')")
 	flag.Parse()
 
 	port := determinePort(*portFlag)
+	allowedOrigins := parseAllowedOrigins(*corsOriginsFlag)
 
-	http.HandleFunc("/convert", convertHandler)
-	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/epubs/", epubsHandler)
+	// Wrap handlers with CORS middleware
+	http.HandleFunc("/convert", withCORS(convertHandler, allowedOrigins))
+	http.HandleFunc("/health", withCORS(healthHandler, allowedOrigins))
+	http.HandleFunc("/epubs/", withCORS(epubsHandler, allowedOrigins))
 
 	// GraphQL handlers.
 	srv := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{Resolvers: graphql.NewResolver()}))
-	http.Handle("/graphql", srv)
+	http.Handle("/graphql", withCORSHandler(srv, allowedOrigins))
 	http.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql"))
 
 	server := &http.Server{
@@ -45,9 +48,98 @@ func main() {
 	}
 
 	log.Printf("Server starting on port %s", port)
+	if len(allowedOrigins) > 0 {
+		log.Printf("CORS enabled for origins: %v", allowedOrigins)
+	} else {
+		log.Printf("CORS disabled (no origins specified)")
+	}
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
+}
+
+func parseAllowedOrigins(corsOrigins string) []string {
+	if corsOrigins == "" {
+		// Check environment variable as fallback
+		corsOrigins = os.Getenv("CORS_ORIGINS")
+	}
+	if corsOrigins == "" {
+		return nil
+	}
+	
+	origins := strings.Split(corsOrigins, ",")
+	var cleanedOrigins []string
+	for _, origin := range origins {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed != "" {
+			cleanedOrigins = append(cleanedOrigins, trimmed)
+		}
+	}
+	return cleanedOrigins
+}
+
+func isOriginAllowed(origin string, allowedOrigins []string) bool {
+	if len(allowedOrigins) == 0 {
+		return false
+	}
+	for _, allowed := range allowedOrigins {
+		if allowed == "*" || allowed == origin {
+			return true
+		}
+	}
+	return false
+}
+
+func withCORS(handler http.HandlerFunc, allowedOrigins []string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		
+		// Handle preflight requests
+		if r.Method == http.MethodOptions {
+			if isOriginAllowed(origin, allowedOrigins) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.Header().Set("Access-Control-Max-Age", "3600")
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		
+		// Set CORS headers for actual requests
+		if isOriginAllowed(origin, allowedOrigins) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+		
+		handler(w, r)
+	}
+}
+
+func withCORSHandler(handler http.Handler, allowedOrigins []string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		
+		// Handle preflight requests
+		if r.Method == http.MethodOptions {
+			if isOriginAllowed(origin, allowedOrigins) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.Header().Set("Access-Control-Max-Age", "3600")
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		
+		// Set CORS headers for actual requests
+		if isOriginAllowed(origin, allowedOrigins) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+		
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func determinePort(portFlag string) string {

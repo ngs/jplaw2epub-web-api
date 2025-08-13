@@ -24,11 +24,21 @@ WORKDIR /root/
 # Copy the binary from builder stage
 COPY --from=builder /app/jplaw2epub-api .
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
 # Expose port
 EXPOSE 8080
 
 # Set default PORT environment variable for Cloud Run
 ENV PORT=8080
 
-# Run the server
-CMD ["./jplaw2epub-api"]
+# Optional: Set default CORS origins (can be overridden at runtime)
+# ENV CORS_ORIGINS=""
+
+# Use entrypoint script to handle arguments
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+# Default command (can be overridden)
+CMD []

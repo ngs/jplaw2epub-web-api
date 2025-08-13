@@ -50,12 +50,49 @@ make build
 # Specify port via flag
 ./jplaw2epub-api -port 8080
 
-# Using environment variable
-PORT=8080 ./jplaw2epub-api
+# Enable CORS for specific origins
+./jplaw2epub-api -cors-origins "https://example.com,https://app.example.com"
+
+# Allow all origins (use with caution)
+./jplaw2epub-api -cors-origins "*"
+
+# Using environment variables
+PORT=8080 CORS_ORIGINS="https://example.com" ./jplaw2epub-api
 
 # Using Make
 make run
 ```
+
+### Command-line Flags
+
+- `-port` - Server listening port (default: auto-select, falls back to PORT env var)
+- `-cors-origins` - Comma-separated list of allowed CORS origins (default: none, falls back to CORS_ORIGINS env var)
+
+## CORS Configuration
+
+The server supports Cross-Origin Resource Sharing (CORS) configuration to allow web applications from specific domains to access the API.
+
+### Examples
+
+```sh
+# Allow requests from multiple domains
+./jplaw2epub-api -cors-origins "https://mydomain.com,https://app.mydomain.com"
+
+# Allow all origins (development only - use with caution)
+./jplaw2epub-api -cors-origins "*"
+
+# Via environment variable
+export CORS_ORIGINS="https://mydomain.com,https://app.mydomain.com"
+./jplaw2epub-api
+```
+
+### Deployment with CORS
+
+For production deployments, configure CORS origins using:
+
+1. **GitHub Secrets**: Add `CORS_ORIGINS` secret with comma-separated URLs
+2. **Environment Variables**: Set `CORS_ORIGINS` in your deployment environment
+3. **Command-line Flag**: Use `-cors-origins` flag when running the server
 
 ## API Endpoints
 
@@ -273,6 +310,42 @@ docker build -t jplaw2epub-api .
 docker run -p 8080:8080 jplaw2epub-api
 ```
 
+### Docker with CORS Configuration
+
+```sh
+# Build the image
+docker build -t jplaw2epub-api .
+
+# Method 1: Using environment variables
+docker run -p 8080:8080 \
+  -e CORS_ORIGINS="https://example.com,https://app.example.com" \
+  jplaw2epub-api
+
+# Method 2: Using command-line arguments
+docker run -p 8080:8080 \
+  jplaw2epub-api \
+  -cors-origins "https://example.com,https://app.example.com"
+
+# Method 3: Using argument syntax
+docker run -p 8080:8080 \
+  jplaw2epub-api \
+  -cors-origins="https://example.com,https://app.example.com"
+
+# Allow all origins (development only)
+docker run -p 8080:8080 \
+  jplaw2epub-api \
+  -cors-origins "*"
+
+# Specify both port and CORS origins
+docker run -p 9000:9000 \
+  jplaw2epub-api \
+  -port 9000 \
+  -cors-origins "https://example.com"
+
+# Using docker-compose (see docker-compose.yml example below)
+docker-compose up
+```
+
 ## Google Cloud Run Deployment
 
 ### 🚀 Quick Setup
@@ -335,6 +408,7 @@ See [docs/CUSTOM_DOMAIN_SETUP.md](docs/CUSTOM_DOMAIN_SETUP.md) for details.
 ## Environment Variables
 
 - `PORT` - Server listening port (default: auto-select)
+- `CORS_ORIGINS` - Comma-separated list of allowed CORS origins (optional)
 
 ## Recommended Cloud Run Settings
 
