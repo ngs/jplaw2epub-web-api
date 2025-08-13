@@ -200,7 +200,38 @@ gcloud run revisions list --service=jplaw2epub-api --region=asia-northeast1
 gcloud projects get-iam-policy $PROJECT_ID
 ```
 
-#### 3. Deployment Failure
+#### 3. Storage Permission Error
+
+If you see: `Permission 'storage.buckets.create' denied`
+
+```bash
+# Fix permissions for existing service account
+chmod +x scripts/fix-permissions.sh
+./scripts/fix-permissions.sh
+
+# Or manually add the role
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:github-actions-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --role="roles/storage.admin"
+```
+
+#### 4. Cloud Build Permission Error
+
+If you see: `Build failed because the default service account is missing required IAM permissions`
+
+```bash
+# Fix all Cloud Build permissions
+export PROJECT_ID="your-project-id"
+chmod +x scripts/fix-cloud-build-permissions.sh
+./scripts/fix-cloud-build-permissions.sh
+
+# Wait 2-3 minutes for permissions to propagate
+sleep 180
+
+# Retry deployment
+```
+
+#### 5. Deployment Failure
 
 ```bash
 # Check Cloud Build logs
@@ -254,10 +285,17 @@ gcloud run services update-traffic jplaw2epub-api \
 
 ### IAM Roles
 
-Minimum required roles:
+Minimum required roles for GitHub Actions service account:
 - `roles/run.developer`: Deploy to Cloud Run
+- `roles/storage.admin`: Create storage buckets (needed for deploy from source)
 - `roles/artifactregistry.writer`: Push images
 - `roles/iam.serviceAccountUser`: Use service account
+- `roles/cloudbuild.builds.editor`: Submit Cloud Build jobs
+- `roles/serviceusage.serviceUsageConsumer`: Use Google Cloud services
+
+Cloud Build service account also needs:
+- `roles/run.admin`: Deploy and manage Cloud Run services
+- `roles/logging.logWriter`: Write build logs
 
 ## 📚 Related Documentation
 
