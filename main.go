@@ -30,7 +30,7 @@ func main() {
 	port := determinePort(*portFlag)
 	allowedOrigins := parseAllowedOrigins(*corsOriginsFlag)
 
-	// Wrap handlers with CORS middleware
+	// Wrap handlers with CORS middleware.
 	http.HandleFunc("/convert", withCORS(convertHandler, allowedOrigins))
 	http.HandleFunc("/health", withCORS(healthHandler, allowedOrigins))
 	http.HandleFunc("/epubs/", withCORS(epubsHandler, allowedOrigins))
@@ -60,13 +60,13 @@ func main() {
 
 func parseAllowedOrigins(corsOrigins string) []string {
 	if corsOrigins == "" {
-		// Check environment variable as fallback
+		// Check environment variable as fallback.
 		corsOrigins = os.Getenv("CORS_ORIGINS")
 	}
 	if corsOrigins == "" {
 		return nil
 	}
-	
+
 	origins := strings.Split(corsOrigins, ",")
 	var cleanedOrigins []string
 	for _, origin := range origins {
@@ -93,8 +93,8 @@ func isOriginAllowed(origin string, allowedOrigins []string) bool {
 func withCORS(handler http.HandlerFunc, allowedOrigins []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		
-		// Handle preflight requests
+
+		// Handle preflight requests..
 		if r.Method == http.MethodOptions {
 			if isOriginAllowed(origin, allowedOrigins) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -105,13 +105,13 @@ func withCORS(handler http.HandlerFunc, allowedOrigins []string) http.HandlerFun
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		
-		// Set CORS headers for actual requests
+
+		// Set CORS headers for actual requests.
 		if isOriginAllowed(origin, allowedOrigins) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 		}
-		
+
 		handler(w, r)
 	}
 }
@@ -119,8 +119,8 @@ func withCORS(handler http.HandlerFunc, allowedOrigins []string) http.HandlerFun
 func withCORSHandler(handler http.Handler, allowedOrigins []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		
-		// Handle preflight requests
+
+		// Handle preflight requests.
 		if r.Method == http.MethodOptions {
 			if isOriginAllowed(origin, allowedOrigins) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -131,13 +131,13 @@ func withCORSHandler(handler http.Handler, allowedOrigins []string) http.Handler
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		
-		// Set CORS headers for actual requests
+
+		// Set CORS headers for actual requests.
 		if isOriginAllowed(origin, allowedOrigins) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 		}
-		
+
 		handler.ServeHTTP(w, r)
 	})
 }

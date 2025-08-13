@@ -17,6 +17,7 @@ import (
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	lawapi "go.ngs.io/jplaw-api-v2"
+
 	"go.ngs.io/jplaw2epub-web-api/graphql/model"
 )
 
