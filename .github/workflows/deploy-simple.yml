@@ -80,6 +80,7 @@ jobs:
           echo "This may take 3-5 minutes on first deployment..."
           
           # Try deployment
+          # Note: PORT is automatically set by Cloud Run
           if gcloud run deploy ${SERVICE_NAME} \
             --source . \
             --region=${REGION} \
@@ -90,7 +91,6 @@ jobs:
             --cpu=1 \
             --memory=512Mi \
             --max-instances=10 \
-            --set-env-vars="PORT=8080" \
             --quiet; then
             echo "✅ Deployment successful!"
           else

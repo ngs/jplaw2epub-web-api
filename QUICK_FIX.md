@@ -48,6 +48,11 @@ gcloud services enable cloudbuild.googleapis.com run.googleapis.com \
   --project=${PROJECT_ID}
 ```
 
+#### "Reserved env name PORT" error
+This happens when trying to set PORT environment variable.
+Solution: Remove `--set-env-vars="PORT=8080"` from deployment commands.
+Cloud Run automatically sets the PORT variable.
+
 ### 5. Check Status
 
 ```bash

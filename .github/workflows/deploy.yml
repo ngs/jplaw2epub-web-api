@@ -81,6 +81,7 @@ jobs:
           echo "Region: ${REGION}"
           
           # Deploy with explicit project
+          # Note: PORT env var is automatically set by Cloud Run, don't set it manually
           gcloud run deploy ${SERVICE_NAME} \
             --source . \
             --region=${REGION} \
@@ -91,7 +92,6 @@ jobs:
             --cpu=1 \
             --memory=512Mi \
             --max-instances=10 \
-            --set-env-vars="PORT=8080" \
             --quiet || {
               echo "Deployment failed. Checking for common issues..."
               echo ""
@@ -149,7 +149,6 @@ jobs:
             --cpu=1 \
             --memory=512Mi \
             --max-instances=10 \
-            --set-env-vars="PORT=8080" \
             --quiet
 
       # Method 3: Deploy via Cloud Build

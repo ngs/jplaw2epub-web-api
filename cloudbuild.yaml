@@ -50,8 +50,6 @@ steps:
       - "0"
       - "--timeout"
       - "60"
-      - "--set-env-vars"
-      - "PORT=8080"
 
   # Test the deployed service
   - name: "gcr.io/cloud-builders/gcloud"

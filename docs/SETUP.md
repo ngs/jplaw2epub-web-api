@@ -82,7 +82,9 @@ Deploy manually from GitHub Actions UI:
 gcloud run deploy jplaw2epub-api \
   --source . \
   --region=asia-northeast1 \
-  --allow-unauthenticated
+  --allow-unauthenticated \
+  --port=8080
+# Note: Don't set PORT env var, it's automatically set by Cloud Run
 ```
 
 #### Option 2: Via Cloud Build

@@ -311,7 +311,8 @@ Manual deployment available via GitHub Actions UI.
 gcloud run deploy jplaw2epub-api \
   --source . \
   --region=asia-northeast1 \
-  --allow-unauthenticated
+  --allow-unauthenticated \
+  --port=8080
 ```
 
 #### Method 3: Via Cloud Build
