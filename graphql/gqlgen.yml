@@ -1,0 +1,41 @@
+# gqlgen configuration
+schema:
+  - schema.graphqls
+
+exec:
+  filename: generated.go
+  package: graphql
+
+model:
+  filename: model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: .
+  package: graphql
+  filename_template: "{name}.resolvers.go"
+
+# Bind jplaw types to GraphQL types
+models:
+  # Don't bind enums directly - we'll handle conversion in resolvers
+  LawInfo:
+    model: go.ngs.io/jplaw-api-v2.LawInfo
+  RevisionInfo:
+    model: go.ngs.io/jplaw-api-v2.RevisionInfo
+  LawItem:
+    model: go.ngs.io/jplaw-api-v2.LawItem
+  KeywordSentence:
+    model: go.ngs.io/jplaw-api-v2.KeywordSentence
+  KeywordItem:
+    model: go.ngs.io/jplaw-api-v2.KeywordItem
+  LawsResponse:
+    model: go.ngs.io/jplaw-api-v2.LawsResponse
+  RevisionsResponse:
+    model: go.ngs.io/jplaw-api-v2.LawRevisionsResponse
+  KeywordResponse:
+    model: go.ngs.io/jplaw-api-v2.KeywordResponse
+
+# Skip generating these models since we're using jplaw types directly
+skip_mod_tidy: false
+omit_slice_element_pointers: true

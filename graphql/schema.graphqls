@@ -1,0 +1,215 @@
+# Enums
+
+enum CategoryCode {
+  CONSTITUTION
+  CRIMINAL
+  FINANCE_GENERAL
+  FISHERIES
+  TOURISM
+  PARLIAMENT
+  POLICE
+  NATIONAL_PROPERTY
+  MINING
+  POSTAL_SERVICE
+  ADMINISTRATIVE_ORG
+  FIRE_SERVICE
+  NATIONAL_TAX
+  INDUSTRY
+  TELECOMMUNICATIONS
+  CIVIL_SERVICE
+  NATIONAL_DEVELOPMENT
+  BUSINESS
+  COMMERCE
+  LABOR
+  ADMINISTRATIVE_PROC
+  LAND
+  NATIONAL_BONDS
+  FINANCE_INSURANCE
+  ENVIRONMENTAL_PROTECT
+  STATISTICS
+  CITY_PLANNING
+  EDUCATION
+  FOREIGN_EXCHANGE_TRADE
+  PUBLIC_HEALTH
+  LOCAL_GOVERNMENT
+  ROADS
+  CULTURE
+  LAND_TRANSPORT
+  SOCIAL_WELFARE
+  LOCAL_FINANCE
+  RIVERS
+  INDUSTRY_GENERAL
+  MARITIME_TRANSPORT
+  SOCIAL_INSURANCE
+  JUDICIARY
+  DISASTER_MANAGEMENT
+  AGRICULTURE
+  AVIATION
+  DEFENSE
+  CIVIL
+  BUILDING_HOUSING
+  FORESTRY
+  FREIGHT_TRANSPORT
+  FOREIGN_AFFAIRS
+}
+
+enum LawType {
+  CONSTITUTION
+  ACT
+  CABINET_ORDER
+  IMPERIAL_ORDER
+  MINISTERIAL_ORDINANCE
+  RULE
+  MISC
+}
+
+enum LawNumEra {
+  MEIJI
+  TAISHO
+  SHOWA
+  HEISEI
+  REIWA
+}
+
+enum LawNumType {
+  CONSTITUTION
+  ACT
+  CABINET_ORDER
+  IMPERIAL_ORDER
+  MINISTERIAL_ORDINANCE
+  RULE
+  MISC
+}
+
+enum CurrentRevisionStatus {
+  CURRENT_ENFORCED
+  UNENFORCED
+  PREVIOUS_ENFORCED
+  REPEAL
+}
+
+enum RepealStatus {
+  NONE
+  REPEAL
+  EXPIRE
+  SUSPEND
+  LOSS_OF_EFFECTIVENESS
+}
+
+enum Mission {
+  NEW
+  PARTIAL
+}
+
+# Types
+
+type LawInfo {
+  lawId: String!
+  lawNum: String!
+  lawNumEra: LawNumEra
+  lawNumYear: Int!
+  lawNumNum: String!
+  lawNumType: LawNumType
+  lawType: LawType
+  promulgationDate: String!
+}
+
+type RevisionInfo {
+  lawRevisionId: String!
+  lawTitle: String!
+  lawTitleKana: String!
+  abbrev: String!
+  lawType: LawType
+  amendmentLawId: String!
+  amendmentLawTitle: String!
+  amendmentLawNum: String!
+  amendmentPromulgateDate: String!
+  amendmentEnforcementDate: String!
+  repealDate: String!
+  remainInForce: Boolean!
+  updated: String!
+  currentRevisionStatus: CurrentRevisionStatus
+  repealStatus: RepealStatus
+  mission: Mission
+}
+
+type LawItem {
+  lawInfo: LawInfo
+  revisionInfo: RevisionInfo
+  currentRevisionInfo: RevisionInfo
+}
+
+type KeywordSentence {
+  text: String!
+  position: String!
+}
+
+type KeywordItem {
+  lawInfo: LawInfo
+  revisionInfo: RevisionInfo
+  sentences: [KeywordSentence!]!
+}
+
+# Response Types
+
+type LawsResponse {
+  count: Int!
+  totalCount: Int!
+  nextOffset: Int!
+  laws: [LawItem!]!
+}
+
+type RevisionsResponse {
+  lawInfo: LawInfo!
+  revisions: [RevisionInfo!]!
+}
+
+type KeywordResponse {
+  totalCount: Int!
+  sentenceCount: Int!
+  nextOffset: Int!
+  items: [KeywordItem!]!
+}
+
+# Query
+
+type Query {
+  laws(
+    lawId: String
+    lawNum: String
+    lawTitle: String
+    lawTitleKana: String
+    lawType: [LawType!]
+    asof: String
+    categoryCode: [CategoryCode!]
+    promulgateDateFrom: String
+    promulgateDateTo: String
+    limit: Int = 100
+    offset: Int = 0
+  ): LawsResponse!
+
+  revisions(
+    lawId: String!
+    lawTitle: String
+    lawTitleKana: String
+    amendmentLawId: String
+    amendmentDateFrom: String
+    amendmentDateTo: String
+    categoryCode: [CategoryCode!]
+    updatedFrom: String
+    updatedTo: String
+  ): RevisionsResponse!
+
+  keyword(
+    keyword: String!
+    lawNum: String
+    lawType: [LawType!]
+    asof: String
+    categoryCode: [CategoryCode!]
+    promulgateDateFrom: String
+    promulgateDateTo: String
+    limit: Int = 100
+    offset: Int = 0
+    sentencesLimit: Int = 10
+  ): KeywordResponse!
+}

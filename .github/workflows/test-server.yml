@@ -1,0 +1,92 @@
+name: Test jplaw2epub-server
+
+on:
+  pull_request:
+    paths:
+      - 'cmd/jplaw2epub-server/**'
+      - 'graphql/**'
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/test-server.yml'
+
+jobs:
+  test:
+    name: Test Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Build server
+        run: go build -v ./cmd/jplaw2epub-server
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t jplaw2epub-server:test \
+            -f cmd/jplaw2epub-server/Dockerfile \
+            .
+
+      - name: Test Docker container
+        run: |
+          # Start container in background
+          docker run -d \
+            --name test-server \
+            -p 8080:8080 \
+            -e PORT=8080 \
+            jplaw2epub-server:test
+          
+          # Wait for server to be ready
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/health 2>/dev/null; then
+              echo "Server is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Server failed to start"
+              docker logs test-server
+              exit 1
+            fi
+            sleep 1
+          done
+          
+          # Test endpoints
+          echo "Testing /health endpoint..."
+          curl -f http://localhost:8080/health
+          
+          echo "Testing GraphQL endpoint..."
+          curl -X POST http://localhost:8080/graphql \
+            -H "Content-Type: application/json" \
+            -d '{"query": "{ laws(limit: 1) { totalCount } }"}'
+          
+          # Clean up
+          docker stop test-server
+          docker rm test-server
+
+      - name: Lint code
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --timeout=5m
