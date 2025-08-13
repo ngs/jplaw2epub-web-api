@@ -43,21 +43,69 @@ jobs:
       - name: "Set up Cloud SDK"
         uses: "google-github-actions/setup-gcloud@v2"
 
+      # Check configuration
+      - name: "Verify configuration"
+        run: |
+          echo "Configuration:"
+          echo "  PROJECT_ID: ${PROJECT_ID}"
+          echo "  SERVICE_NAME: ${SERVICE_NAME}"
+          echo "  REGION: ${REGION}"
+          
+          if [ -z "${PROJECT_ID}" ]; then
+            echo "ERROR: PROJECT_ID is not set in GitHub secrets"
+            exit 1
+          fi
+          
+          # Set default project
+          gcloud config set project ${PROJECT_ID}
+          
+          # Check if APIs are enabled
+          echo ""
+          echo "Checking required APIs..."
+          for api in cloudbuild.googleapis.com run.googleapis.com artifactregistry.googleapis.com; do
+            if gcloud services list --enabled --filter="name:${api}" --format="value(name)" | grep -q "${api}"; then
+              echo "  ✓ ${api}"
+            else
+              echo "  ✗ ${api} - enabling..."
+              gcloud services enable ${api} --project=${PROJECT_ID}
+            fi
+          done
+
       # Method 1: Deploy from source (default, simplest)
       - name: "Deploy from source"
         if: github.event_name == 'push' || github.event.inputs.deploy_method == 'source'
         run: |
           echo "Deploying from source code..."
+          echo "Project: ${PROJECT_ID}"
+          echo "Service: ${SERVICE_NAME}"
+          echo "Region: ${REGION}"
+          
+          # Deploy with explicit project
           gcloud run deploy ${SERVICE_NAME} \
             --source . \
             --region=${REGION} \
+            --project=${PROJECT_ID} \
             --platform=managed \
             --allow-unauthenticated \
             --port=8080 \
             --cpu=1 \
             --memory=512Mi \
             --max-instances=10 \
-            --set-env-vars="PORT=8080"
+            --set-env-vars="PORT=8080" \
+            --quiet || {
+              echo "Deployment failed. Checking for common issues..."
+              echo ""
+              echo "Checking if Cloud Build service account has permissions..."
+              PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
+              CLOUD_BUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+              echo "Cloud Build SA: ${CLOUD_BUILD_SA}"
+              
+              echo ""
+              echo "To fix permissions, run locally:"
+              echo "  export PROJECT_ID=${PROJECT_ID}"
+              echo "  ./scripts/gcp-setup.sh permissions"
+              exit 1
+            }
 
       # Method 2: Deploy via Artifact Registry
       - name: "Setup Artifact Registry"
@@ -94,13 +142,15 @@ jobs:
           gcloud run deploy ${SERVICE_NAME} \
             --image="${IMAGE_TAG}" \
             --region=${REGION} \
+            --project=${PROJECT_ID} \
             --platform=managed \
             --allow-unauthenticated \
             --port=8080 \
             --cpu=1 \
             --memory=512Mi \
             --max-instances=10 \
-            --set-env-vars="PORT=8080"
+            --set-env-vars="PORT=8080" \
+            --quiet
 
       # Method 3: Deploy via Cloud Build
       - name: "Deploy via Cloud Build"
@@ -117,6 +167,7 @@ jobs:
 
           gcloud builds submit \
             --config=${CONFIG_FILE} \
+            --project=${PROJECT_ID} \
             --region=${REGION} \
             --substitutions=_SERVICE_NAME=${SERVICE_NAME},_REGION=${REGION},_REPOSITORY=${REPOSITORY} \
             .

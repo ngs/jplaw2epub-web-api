@@ -1,0 +1,143 @@
+name: Simple Deploy (First Time Setup)
+
+# This workflow is for first-time deployment when WIF might not be fully configured
+# It uses Google Cloud authentication with a service account key (less secure but simpler)
+# After successful deployment, switch to the main deploy.yml workflow
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  REGION: asia-northeast1
+  SERVICE_NAME: jplaw2epub-api
+
+jobs:
+  deploy:
+    name: Simple Deploy from Source
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Alternative authentication methods (choose one):
+      
+      # Option 1: If you have WIF configured
+      - id: 'auth-wif'
+        name: 'Try WIF Authentication'
+        continue-on-error: true
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+      
+      # Option 2: If WIF fails, try service account key
+      - id: 'auth-key'
+        name: 'Try Service Account Key Authentication'
+        if: steps.auth-wif.outcome == 'failure'
+        continue-on-error: true
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+      
+      - name: 'Check authentication'
+        run: |
+          if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
+            echo "ERROR: Not authenticated to Google Cloud"
+            echo ""
+            echo "Please configure one of the following:"
+            echo "1. Workload Identity Federation (recommended):"
+            echo "   - Run: ./scripts/gcp-setup.sh all"
+            echo "   - Add secrets: WIF_PROVIDER, WIF_SERVICE_ACCOUNT, PROJECT_ID"
+            echo ""
+            echo "2. Service Account Key (temporary):"
+            echo "   - Create a service account key"
+            echo "   - Add secret: GCP_SA_KEY"
+            echo ""
+            exit 1
+          fi
+          
+          echo "Authenticated successfully"
+          gcloud config set project ${PROJECT_ID}
+      
+      - name: 'Enable required APIs'
+        run: |
+          echo "Enabling required APIs..."
+          gcloud services enable \
+            cloudbuild.googleapis.com \
+            run.googleapis.com \
+            artifactregistry.googleapis.com \
+            storage.googleapis.com \
+            --project=${PROJECT_ID}
+      
+      - name: 'Deploy from source'
+        run: |
+          echo "Deploying ${SERVICE_NAME} to Cloud Run..."
+          echo "This may take 3-5 minutes on first deployment..."
+          
+          # Try deployment
+          if gcloud run deploy ${SERVICE_NAME} \
+            --source . \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=8080 \
+            --cpu=1 \
+            --memory=512Mi \
+            --max-instances=10 \
+            --set-env-vars="PORT=8080" \
+            --quiet; then
+            echo "✅ Deployment successful!"
+          else
+            echo ""
+            echo "❌ Deployment failed"
+            echo ""
+            echo "Common fixes:"
+            echo "1. Run locally: ./scripts/gcp-setup.sh permissions"
+            echo "2. Wait 2-3 minutes for permissions to propagate"
+            echo "3. Check if PROJECT_ID is correct: ${PROJECT_ID}"
+            echo ""
+            exit 1
+          fi
+      
+      - name: 'Get service URL'
+        if: success()
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} \
+            --region=${REGION} \
+            --project=${PROJECT_ID} \
+            --format='value(status.url)')
+          
+          echo "🎉 Service deployed successfully!"
+          echo "📍 URL: ${SERVICE_URL}"
+          echo ""
+          echo "Test your service:"
+          echo "  curl ${SERVICE_URL}/health"
+      
+      - name: 'Next steps'
+        if: always()
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Next Steps"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "1. If deployment succeeded:"
+          echo "   - Your service is now live!"
+          echo "   - Future deployments will happen automatically on push to master"
+          echo ""
+          echo "2. If deployment failed:"
+          echo "   - Run: export PROJECT_ID=${PROJECT_ID}"
+          echo "   - Run: ./scripts/gcp-setup.sh all"
+          echo "   - Wait 2-3 minutes"
+          echo "   - Try this workflow again"
+          echo ""
+          echo "3. For custom domain:"
+          echo "   - Run: export DOMAIN=api.yourdomain.com"
+          echo "   - Run: ./scripts/gcp-setup.sh domain"
+          echo ""
