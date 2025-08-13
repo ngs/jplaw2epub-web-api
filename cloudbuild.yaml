@@ -45,7 +45,7 @@ steps:
         
         # Add CORS environment variable if specified
         if [ -n "${_CORS_ORIGINS}" ]; then
-          DEPLOY_CMD="$$DEPLOY_CMD --set-env-vars=CORS_ORIGINS='${_CORS_ORIGINS}'"
+          DEPLOY_CMD="$$DEPLOY_CMD --set-env-vars=CORS_ORIGINS=${_CORS_ORIGINS}"
         fi
         
         echo "Deploying with command: $$DEPLOY_CMD"

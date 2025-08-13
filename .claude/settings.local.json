@@ -12,7 +12,8 @@
       "Bash(gofmt:*)",
       "Bash(mkdir:*)",
       "Bash(rm:*)",
-      "Bash(make fmt:*)"
+      "Bash(make fmt:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
