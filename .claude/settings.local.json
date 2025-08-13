@@ -3,7 +3,13 @@
     "allow": [
       "Bash(mv:*)",
       "Bash(rmdir:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(golangci-lint run:*)",
+      "Bash(go doc:*)",
+      "Bash(goimports:*)",
+      "Bash(go install:*)",
+      "Bash(grep:*)",
+      "Bash(gofmt:*)"
     ],
     "deny": [],
     "ask": []

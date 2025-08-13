@@ -1,8 +1,9 @@
 package graphql
 
 import (
-	jplaw "go.ngs.io/jplaw-api-v2"
 	"go.ngs.io/jplaw2epub-web-api/graphql/model"
+
+	jplaw "go.ngs.io/jplaw-api-v2"
 )
 
 var categoryCodeMap = map[model.CategoryCode]jplaw.CategoryCd{
@@ -58,7 +59,7 @@ var categoryCodeMap = map[model.CategoryCode]jplaw.CategoryCd{
 	model.CategoryCodeForeignAffairs:       jplaw.CategoryCdForeignAffairs,
 }
 
-// convertCategoryCode converts GraphQL CategoryCode to jplaw CategoryCd
+// convertCategoryCode converts GraphQL CategoryCode to jplaw CategoryCd.
 func convertCategoryCode(codes []model.CategoryCode) []jplaw.CategoryCd {
 	if len(codes) == 0 {
 		return nil
@@ -73,7 +74,7 @@ func convertCategoryCode(codes []model.CategoryCode) []jplaw.CategoryCd {
 	return result
 }
 
-// convertLawType converts GraphQL LawType to jplaw LawType
+// convertLawType converts GraphQL LawType to jplaw LawType.
 func convertLawType(types []model.LawType) []jplaw.LawType {
 	if len(types) == 0 {
 		return nil
@@ -101,7 +102,7 @@ func convertLawType(types []model.LawType) []jplaw.LawType {
 	return result
 }
 
-// Reverse conversions for output
+// Reverse conversions for output.
 
 func convertLawTypeToModel(t *jplaw.LawType) *model.LawType {
 	if t == nil {

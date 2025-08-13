@@ -7,18 +7,38 @@ This project provides REST and GraphQL APIs for:
 - Querying Japanese law data via GraphQL
 - Fetching and converting laws by ID
 
+## Quick Start
+
+```bash
+# Clone repository
+git clone https://github.com/ngs/jplaw2epub-web-api.git
+cd jplaw2epub-web-api
+
+# Install dependencies
+make deps
+
+# Run linter and format code
+make fmt lint
+
+# Build and run
+make build
+./jplaw2epub-server
+```
+
 ## Installation
+
+### Install from Go module
 
 ```sh
 go install go.ngs.io/jplaw2epub-web-api@latest
 ```
 
-Or build from source:
+### Build from source
 
 ```sh
 git clone https://github.com/ngs/jplaw2epub-web-api.git
 cd jplaw2epub-web-api
-go build -o jplaw2epub-server .
+make build
 ```
 
 ## Running the Server
@@ -32,6 +52,9 @@ go build -o jplaw2epub-server .
 
 # Using environment variable
 PORT=8080 ./jplaw2epub-server
+
+# Using Make
+make run
 ```
 
 ## API Endpoints
@@ -129,11 +152,123 @@ curl -X POST http://localhost:8080/graphql \
   -d '{"query": "{ laws(lawTitle: \"電波\", limit: 5) { totalCount laws { lawInfo { lawId lawNum } revisionInfo { lawTitle } } } }"}'
 ```
 
+## Development
+
+### Prerequisites
+
+- Go 1.23 or later
+- golangci-lint (for linting)
+- Docker (optional, for containerized deployment)
+
+### Makefile Commands
+
+```bash
+make help          # Show help message
+make run           # Run the server locally
+make build         # Build the binary
+make test          # Run tests
+make lint          # Run linter
+make fmt           # Format code
+make clean         # Clean build artifacts
+make deps          # Download and tidy dependencies
+make docker-build  # Build Docker image
+make docker-run    # Run Docker container
+make gqlgen        # Generate GraphQL code
+make install-tools # Install development tools
+make all           # Run all checks and build
+```
+
+### Project Structure
+
+```
+.
+├── main.go                 # Server entry point
+├── Dockerfile              # Docker configuration
+├── cloudbuild.yaml         # Google Cloud Build configuration
+├── .golangci.yml           # Linter configuration
+├── Makefile                # Build and development tasks
+├── go.mod                  # Go module definition
+├── go.sum                  # Go module checksums
+├── graphql/                # GraphQL implementation
+│   ├── schema.graphqls     # GraphQL schema definition
+│   ├── resolver.go         # GraphQL resolvers
+│   ├── schema.resolvers.go # Generated resolver implementations
+│   ├── converters.go       # Type converters
+│   ├── generated.go        # Generated code
+│   ├── gqlgen.yml          # GraphQL code generation config
+│   └── model/
+│       └── models_gen.go   # Generated models
+└── README.md               # This file
+```
+
+### Code Quality
+
+This project uses `golangci-lint` with a comprehensive set of linters to ensure code quality:
+
+- **gofmt** - Code formatting
+- **goimports** - Import formatting and organization
+- **govet** - Go vet checks
+- **errcheck** - Error handling verification
+- **staticcheck** - Static analysis
+- **gosec** - Security checks
+- **gocritic** - Opinionated linting
+- **revive** - Comprehensive linting
+- And many more...
+
+Run linter:
+```bash
+make lint
+```
+
+Format code:
+```bash
+make fmt
+```
+
+### GraphQL Schema Development
+
+The GraphQL schema is defined in `graphql/schema.graphqls`. To regenerate code after schema changes:
+
+```sh
+make gqlgen
+# or manually
+cd graphql
+go run github.com/99designs/gqlgen generate
+```
+
+### Local Development
+
+```bash
+# Install development tools
+make install-tools
+
+# Download dependencies
+make deps
+
+# Format and lint code
+make fmt lint
+
+# Run tests
+make test
+
+# Build and run
+make build
+./jplaw2epub-server
+
+# Or run directly
+make run
+```
+
 ## Docker Deployment
 
 Build and run with Docker:
 
 ```sh
+# Using Make
+make docker-build
+make docker-run
+
+# Or manually
 docker build -t jplaw2epub-server .
 docker run -p 8080:8080 jplaw2epub-server
 ```
@@ -214,35 +349,21 @@ For longer processing times, extend timeout:
 gcloud run services update jplaw2epub-server --timeout 300
 ```
 
-## Development
-
-### Local Development
-
-```bash
-# Default (automatically finds available port)
-go run main.go
-
-# Specify port
-go run main.go -port 8080
-
-# Using environment variable
-PORT=3000 go run main.go
-```
-
-### GraphQL Schema
-
-The GraphQL schema is defined in `graphql/schema.graphqls`. To regenerate code after schema changes:
-
-```sh
-cd graphql
-go run github.com/99designs/gqlgen generate
-```
-
 ## Dependencies
 
 - [jplaw2epub](https://github.com/ngs/jplaw2epub) - Core EPUB conversion library
 - [jplaw-api-v2](https://go.ngs.io/jplaw-api-v2) - Japanese law API client
 - [gqlgen](https://gqlgen.com/) - GraphQL code generation
+- [golangci-lint](https://golangci-lint.run/) - Go linters aggregator
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Run tests and linter (`make all`)
+4. Commit your changes (`git commit -m 'Add some amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
 ## License
 
