@@ -10,7 +10,8 @@
       "Bash(go install:*)",
       "Bash(grep:*)",
       "Bash(gofmt:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

@@ -6,6 +6,16 @@ on:
       - main
       - master
   workflow_dispatch:
+    inputs:
+      deploy_method:
+        description: 'Deployment method'
+        required: false
+        default: 'source'
+        type: choice
+        options:
+          - source
+          - artifact-registry
+          - cloud-build
 
 env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
@@ -35,25 +45,54 @@ jobs:
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
 
-      - name: 'Configure docker for Artifact Registry'
+      # Method 1: Deploy from source (default, simplest)
+      - name: 'Deploy from source'
+        if: github.event_name == 'push' || github.event.inputs.deploy_method == 'source'
         run: |
+          echo "Deploying from source code..."
+          gcloud run deploy ${SERVICE_NAME} \
+            --source . \
+            --region=${REGION} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=8080 \
+            --cpu=1 \
+            --memory=512Mi \
+            --max-instances=10 \
+            --set-env-vars="PORT=8080"
+
+      # Method 2: Deploy via Artifact Registry
+      - name: 'Setup Artifact Registry'
+        if: github.event.inputs.deploy_method == 'artifact-registry'
+        run: |
+          # Create repository if it doesn't exist
+          gcloud artifacts repositories create ${REPOSITORY} \
+            --repository-format=docker \
+            --location=${REGION} \
+            --description="Docker repository for Cloud Run" || echo "Repository might already exist"
+          
+          # Configure Docker authentication
           gcloud auth configure-docker ${REGION}-docker.pkg.dev
 
-      - name: 'Build and push Docker image'
+      - name: 'Build and push to Artifact Registry'
+        if: github.event.inputs.deploy_method == 'artifact-registry'
         run: |
           IMAGE_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${SERVICE_NAME}:${GITHUB_SHA}"
+          IMAGE_LATEST="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${SERVICE_NAME}:latest"
           
-          docker build \
-            -t "${IMAGE_TAG}" \
-            -f Dockerfile \
-            .
+          echo "Building Docker image..."
+          docker build -t "${IMAGE_TAG}" -t "${IMAGE_LATEST}" -f Dockerfile .
           
+          echo "Pushing to Artifact Registry..."
           docker push "${IMAGE_TAG}"
+          docker push "${IMAGE_LATEST}"
           
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
-      - name: 'Deploy to Cloud Run'
+      - name: 'Deploy from Artifact Registry'
+        if: github.event.inputs.deploy_method == 'artifact-registry'
         run: |
+          echo "Deploying from Artifact Registry..."
           gcloud run deploy ${SERVICE_NAME} \
             --image="${IMAGE_TAG}" \
             --region=${REGION} \
@@ -65,6 +104,26 @@ jobs:
             --max-instances=10 \
             --set-env-vars="PORT=8080"
 
+      # Method 3: Deploy via Cloud Build
+      - name: 'Deploy via Cloud Build'
+        if: github.event.inputs.deploy_method == 'cloud-build'
+        run: |
+          echo "Deploying via Cloud Build..."
+          
+          # Check if cloudbuild-ar.yaml exists, otherwise use cloudbuild.yaml
+          if [ -f "cloudbuild-ar.yaml" ]; then
+            CONFIG_FILE="cloudbuild-ar.yaml"
+          else
+            CONFIG_FILE="cloudbuild.yaml"
+          fi
+          
+          gcloud builds submit \
+            --config=${CONFIG_FILE} \
+            --region=${REGION} \
+            --substitutions=_SERVICE_NAME=${SERVICE_NAME},_REGION=${REGION},_REPOSITORY=${REPOSITORY} \
+            .
+
+      # Common post-deployment steps
       - name: 'Get service URL'
         run: |
           SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} \
@@ -73,12 +132,54 @@ jobs:
           echo "Service deployed to: ${SERVICE_URL}"
           echo "SERVICE_URL=${SERVICE_URL}" >> $GITHUB_ENV
 
+      - name: 'Wait for service to be ready'
+        run: |
+          echo "Waiting for service to be fully ready..."
+          for i in {1..30}; do
+            if curl -f "${SERVICE_URL}/health" 2>/dev/null; then
+              echo "Service is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Service health check failed after 30 attempts"
+              exit 1
+            fi
+            echo "Attempt $i/30: Service not ready yet, waiting..."
+            sleep 2
+          done
+
       - name: 'Test deployment'
         run: |
           echo "Testing health endpoint..."
           curl -f "${SERVICE_URL}/health" || exit 1
           
+          echo ""
           echo "Testing GraphQL endpoint..."
-          curl -X POST "${SERVICE_URL}/graphql" \
+          RESPONSE=$(curl -s -X POST "${SERVICE_URL}/graphql" \
             -H "Content-Type: application/json" \
-            -d '{"query": "{ laws(limit: 1) { totalCount } }"}' || exit 1
+            -d '{"query": "{ laws(limit: 1) { totalCount } }"}')
+          
+          echo "Response: ${RESPONSE}"
+          
+          # Check if response contains errors
+          if echo "${RESPONSE}" | grep -q '"errors"'; then
+            echo "GraphQL endpoint returned errors"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ Deployment successful!"
+          echo "🌐 Service URL: ${SERVICE_URL}"
+
+      - name: 'Display deployment summary'
+        if: always()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Deployment Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Service: ${SERVICE_NAME}"
+          echo "  Region: ${REGION}"
+          echo "  URL: ${SERVICE_URL:-Not available}"
+          echo "  Method: ${{ github.event.inputs.deploy_method || 'source' }}"
+          echo "  Commit: ${GITHUB_SHA:0:7}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
