@@ -61,7 +61,7 @@ jobs:
         run: |
           docker build \
             -t jplaw2epub-server:test \
-            -f cmd/jplaw2epub-server/Dockerfile \
+            -f Dockerfile \
             .
 
       - name: Test Docker container
