@@ -9,7 +9,8 @@
       "Bash(goimports:*)",
       "Bash(go install:*)",
       "Bash(grep:*)",
-      "Bash(gofmt:*)"
+      "Bash(gofmt:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
