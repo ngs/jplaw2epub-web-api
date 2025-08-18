@@ -87,7 +87,9 @@ jobs:
           # Build environment variables command
           ENV_VARS_CMD=""
           if [ -n "${CORS_ORIGINS}" ]; then
-            ENV_VARS_CMD="--set-env-vars=CORS_ORIGINS=${CORS_ORIGINS}"
+            # Escape CORS_ORIGINS value for gcloud command
+            # Use caret (^) as separator instead of comma for gcloud
+            ENV_VARS_CMD="--set-env-vars=^@^CORS_ORIGINS=${CORS_ORIGINS}"
           fi
           
           gcloud run deploy ${SERVICE_NAME} \
@@ -152,7 +154,9 @@ jobs:
           # Build environment variables command
           ENV_VARS_CMD=""
           if [ -n "${CORS_ORIGINS}" ]; then
-            ENV_VARS_CMD="--set-env-vars=CORS_ORIGINS=${CORS_ORIGINS}"
+            # Escape CORS_ORIGINS value for gcloud command
+            # Use caret (^) as separator instead of comma for gcloud
+            ENV_VARS_CMD="--set-env-vars=^@^CORS_ORIGINS=${CORS_ORIGINS}"
           fi
           
           gcloud run deploy ${SERVICE_NAME} \
