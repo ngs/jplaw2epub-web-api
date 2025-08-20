@@ -13,7 +13,16 @@
       "Bash(mkdir:*)",
       "Bash(rm:*)",
       "Bash(make fmt:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(go build:*)",
+      "Bash(docker build:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker run:*)",
+      "Bash(go list:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(docker compose:*)"
     ],
     "deny": [],
     "ask": []
