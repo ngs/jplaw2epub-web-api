@@ -14,10 +14,17 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o jplaw2epub-api .
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.20
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+# Install required runtime dependencies  
+# go-fitz v1.24.15 requires MuPDF 1.24.x
+RUN apk --no-cache add ca-certificates libffi mupdf-libs && \
+  ln -s /usr/lib/libmupdf.so.* /usr/lib/libmupdf.so && \
+  # Set FZ_VERSION based on installed MuPDF version
+  echo "export FZ_VERSION=$(ls /usr/lib/libmupdf.so.* | sed 's/.*\.so\.//' | head -1)" >> /etc/profile.d/fz_version.sh
+
+# Set FZ_VERSION environment variable
+ENV FZ_VERSION=1.24.2
 
 WORKDIR /root/
 

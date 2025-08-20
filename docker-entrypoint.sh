@@ -54,7 +54,8 @@ done
 # If no arguments passed, start with default configuration
 if [ $# -eq 0 ]; then
     echo "Starting jplaw2epub-api with args: $ARGS"
-    eval "./jplaw2epub-api $ARGS"
+    # Use sh -c to properly handle quoted arguments
+    sh -c "./jplaw2epub-api $ARGS"
 else
     # Pass through all arguments if any non-flag arguments are provided
     echo "Starting jplaw2epub-api with custom arguments: $*"
