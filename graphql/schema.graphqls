@@ -212,4 +212,22 @@ type Query {
     offset: Int = 0
     sentencesLimit: Int = 10
   ): KeywordResponse!
+  
+  epub(id: String!): Epub!
+}
+
+# EPUB Types
+
+type Epub {
+  id: String!
+  signedUrl: String
+  status: EpubStatus!
+  error: String
+}
+
+enum EpubStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

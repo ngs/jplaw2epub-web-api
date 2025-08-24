@@ -22,7 +22,13 @@
       "Bash(docker run:*)",
       "Bash(go list:*)",
       "WebFetch(domain:github.com)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(go run:*)",
+      "Bash(chmod:*)",
+      "Bash(go fmt:*)",
+      "WebFetch(domain:cloud.google.com)",
+      "Bash(go get:*)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": [],
     "ask": []

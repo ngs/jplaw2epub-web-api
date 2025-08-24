@@ -435,7 +435,6 @@ gcloud run services update jplaw2epub-api --timeout 300
 
 ## Dependencies
 
-- [jplaw2epub](https://github.com/ngs/jplaw2epub) - Core EPUB conversion library
 - [jplaw-api-v2](https://go.ngs.io/jplaw-api-v2) - Japanese law API client
 - [gqlgen](https://gqlgen.com/) - GraphQL code generation
 - [golangci-lint](https://golangci-lint.run/) - Go linters aggregator

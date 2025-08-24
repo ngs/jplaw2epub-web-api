@@ -22,9 +22,7 @@ func main() {
 	allowedOrigins := handlers.ParseAllowedOrigins(*corsOriginsFlag)
 
 	// Wrap handlers with CORS middleware.
-	http.HandleFunc("/convert", handlers.WithCORS(handlers.ConvertHandler, allowedOrigins))
 	http.HandleFunc("/health", handlers.WithCORS(handlers.HealthHandler, allowedOrigins))
-	http.HandleFunc("/epubs/", handlers.WithCORS(handlers.EpubsHandler, allowedOrigins))
 
 	// GraphQL handlers.
 	srv := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{Resolvers: graphql.NewResolver()}))
