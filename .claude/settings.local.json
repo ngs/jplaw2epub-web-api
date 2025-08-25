@@ -29,7 +29,9 @@
       "WebFetch(domain:cloud.google.com)",
       "Bash(go get:*)",
       "Bash(git remote set-url:*)",
-      "Bash(gcloud run jobs executions list:*)"
+      "Bash(gcloud run jobs executions list:*)",
+      "Bash(make lint:*)",
+      "Bash(make:*)"
     ],
     "deny": [],
     "ask": []
