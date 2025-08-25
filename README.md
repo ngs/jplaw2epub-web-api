@@ -2,10 +2,11 @@
 
 Web API server for converting Japanese law documents to EPUB format.
 
-This project provides REST and GraphQL APIs for:
-- Converting Japanese Standard Law XML Schema to EPUB files
+This project provides GraphQL APIs for:
+- Asynchronous EPUB generation using Cloud Run Jobs (handles large files without timeouts)
 - Querying Japanese law data via GraphQL
-- Fetching and converting laws by ID
+- Converting Japanese Standard Law XML Schema to EPUB files with status tracking
+- Searching laws by category, type, title, and keywords
 
 ## Quick Start
 
@@ -98,24 +99,56 @@ For production deployments, configure CORS origins using:
 
 ### REST API
 
-- **POST /convert** - Convert XML to EPUB
-  ```sh
-  curl -X POST -H "Content-Type: application/xml" \
-    --data-binary @law.xml \
-    http://localhost:8080/convert -o output.epub
-  ```
-
-- **GET /epubs/{law_id}** - Get EPUB by law ID
-  ```sh
-  curl http://localhost:8080/epubs/325AC0000000131 -o radio_act.epub
-  ```
-
 - **GET /health** - Health check endpoint
 
 ### GraphQL API
 
 - **POST/GET /graphql** - GraphQL endpoint
 - **GET /graphiql** - Interactive GraphQL playground
+
+#### EPUB Generation (Asynchronous)
+
+The API now uses asynchronous EPUB generation with Cloud Run Jobs to handle large files without timeouts:
+
+```graphql
+query GetEpub($id: String!) {
+  epub(id: $id) {
+    id
+    status      # PENDING | PROCESSING | COMPLETED | FAILED
+    signedUrl   # Download URL when completed
+    error       # Error message if failed
+  }
+}
+```
+
+Example client implementation:
+```javascript
+async function downloadEpub(id) {
+  const pollInterval = 3000; // 3 seconds
+  const maxAttempts = 100;   // Max 5 minutes
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    const { data } = await client.query({
+      query: GET_EPUB_QUERY,
+      variables: { id },
+      fetchPolicy: 'network-only'
+    });
+    
+    if (data.epub.status === 'COMPLETED') {
+      window.location.href = data.epub.signedUrl;
+      return;
+    }
+    
+    if (data.epub.status === 'FAILED') {
+      throw new Error(data.epub.error || 'EPUB generation failed');
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+  
+  throw new Error('Timeout');
+}
+```
 
 #### Example Queries
 
@@ -187,6 +220,45 @@ Search laws by title:
 curl -X POST http://localhost:8080/graphql \
   -H "Content-Type: application/json" \
   -d '{"query": "{ laws(lawTitle: \"電波\", limit: 5) { totalCount laws { lawInfo { lawId lawNum } revisionInfo { lawTitle } } } }"}'
+```
+
+## Asynchronous EPUB Generation
+
+### Architecture
+
+The API uses Cloud Run Jobs and Cloud Storage for asynchronous EPUB generation to handle large files without timeouts:
+
+```
+[Client] → [Cloud Run API] → [Cloud Run Jobs API] → [Cloud Run Job]
+               ↓                                          ↓
+         status check                              EPUB generation
+               ↓                                          ↓
+         [Cloud Storage] ←────────────────────────────────┘
+```
+
+### Setup
+
+1. **Deploy the EPUB Generation Job**: Deploy the [jplaw2epub-generate-epub-job](https://github.com/ngs/jplaw2epub-generate-epub-job) repository as a Cloud Run Job
+
+2. **Configure Environment Variables**: Set the required environment variables when deploying the API:
+   ```bash
+   gcloud run services update jplaw2epub-api \
+     --update-env-vars PROJECT_ID=YOUR_PROJECT_ID,\
+   EPUB_BUCKET_NAME=epub-storage,\
+   EPUB_JOB_NAME=epub-generator,\
+   REGION=asia-northeast1 \
+     --region=asia-northeast1
+   ```
+
+3. **Cloud Storage**: The job automatically creates and manages the storage bucket for EPUB files
+
+### File Structure
+
+```
+Cloud Storage (epub-storage/)
+├── v1.0.0/                    # App version
+│   ├── {id}.epub             # Generated EPUB
+│   └── {id}.status           # Processing status
 ```
 
 ## Development
@@ -409,6 +481,10 @@ See [docs/CUSTOM_DOMAIN_SETUP.md](docs/CUSTOM_DOMAIN_SETUP.md) for details.
 
 - `PORT` - Server listening port (default: auto-select)
 - `CORS_ORIGINS` - Comma-separated list of allowed CORS origins (optional)
+- `PROJECT_ID` - GCP Project ID (required for async EPUB generation)
+- `EPUB_BUCKET_NAME` - Cloud Storage bucket name for EPUB files (default: epub-storage)
+- `EPUB_JOB_NAME` - Cloud Run Job name for EPUB generation (default: epub-generator)
+- `REGION` - GCP region (default: asia-northeast1)
 
 ## Recommended Cloud Run Settings
 

@@ -32,4 +32,5 @@ go.work
 
 # Environment files
 .env
-.env.local
+.env.local*.json
+/jplaw2epub-api
