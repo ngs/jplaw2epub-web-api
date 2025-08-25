@@ -31,8 +31,8 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 }
 
 // ApacheLoggerMiddleware logs HTTP requests in Apache Combined Log Format.
-// Format: remote_addr - remote_user [time_local] "request" status size "referer" "user_agent"
-// Example: 127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326 "http://www.example.com/start.html" "Mozilla/4.08 [en] (Win98; I ;Nav)"
+// Format: remote_addr - remote_user [time_local] "request" status size "referer" "user_agent".
+// Example: 127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326 "http://www.example.com/start.html" "Mozilla/4.08 [en] (Win98; I ;Nav)".
 func ApacheLoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -40,7 +40,7 @@ func ApacheLoggerMiddleware(next http.Handler) http.Handler {
 		// Wrap the ResponseWriter to capture status and size.
 		wrapped := &responseWriter{
 			ResponseWriter: w,
-			status:         http.StatusOK, // Default to 200 if not set
+			status:         http.StatusOK, // Default to 200 if not set.
 		}
 
 		// Process request.
@@ -51,7 +51,7 @@ func ApacheLoggerMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func logApacheFormat(r *http.Request, rw *responseWriter, duration time.Duration) {
+func logApacheFormat(r *http.Request, rw *responseWriter, _ time.Duration) {
 	// Get remote address.
 	remoteAddr := r.RemoteAddr
 	if xForwardedFor := r.Header.Get("X-Forwarded-For"); xForwardedFor != "" {
@@ -67,7 +67,7 @@ func logApacheFormat(r *http.Request, rw *responseWriter, duration time.Duration
 		remoteUser = user
 	}
 
-	// Format time in Apache format: [day/month/year:hour:minute:second zone]
+	// Format time in Apache format: [day/month/year:hour:minute:second zone].
 	timeLocal := time.Now().Format("[02/Jan/2006:15:04:05 -0700]")
 
 	// Build request line.
@@ -121,28 +121,28 @@ func extractGraphQLInfo(r *http.Request) string {
 		return ""
 	}
 
-	// Read body
+	// Read body.
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		return ""
 	}
-	// Restore body for downstream handlers
+	// Restore body for downstream handlers.
 	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-	// Parse GraphQL request
+	// Parse GraphQL request.
 	var gqlReq GraphQLRequest
 	if err := json.Unmarshal(bodyBytes, &gqlReq); err != nil {
 		return ""
 	}
 
-	// Extract operation type and name
+	// Extract operation type and name.
 	operationType := extractOperationType(gqlReq.Query)
 	operationName := gqlReq.OperationName
 	if operationName == "" {
 		operationName = extractOperationName(gqlReq.Query)
 	}
 
-	// Build GraphQL info string
+	// Build GraphQL info string.
 	var info []string
 	if operationType != "" {
 		info = append(info, operationType)
@@ -151,7 +151,7 @@ func extractGraphQLInfo(r *http.Request) string {
 		info = append(info, operationName)
 	}
 
-	// Add variables count if present
+	// Add variables count if present.
 	if len(gqlReq.Variables) > 0 {
 		info = append(info, fmt.Sprintf("%d vars", len(gqlReq.Variables)))
 	}
@@ -165,13 +165,13 @@ func extractGraphQLInfo(r *http.Request) string {
 // extractOperationType extracts the operation type (query/mutation/subscription) from GraphQL query.
 func extractOperationType(query string) string {
 	query = strings.TrimSpace(query)
-	
-	// Check for shorthand query (starts with {)
+
+	// Check for shorthand query (starts with {).
 	if strings.HasPrefix(query, "{") {
 		return "query"
 	}
 
-	// Look for operation type keyword
+	// Look for operation type keyword.
 	operationPattern := regexp.MustCompile(`^\s*(query|mutation|subscription)\b`)
 	matches := operationPattern.FindStringSubmatch(query)
 	if len(matches) > 1 {
@@ -183,15 +183,15 @@ func extractOperationType(query string) string {
 
 // extractOperationName extracts the operation name from GraphQL query.
 func extractOperationName(query string) string {
-	// Pattern to match operation name after query/mutation/subscription
-	// Examples: "query GetLaws {", "mutation CreateItem(", "query {" (anonymous)
+	// Pattern to match operation name after query/mutation/subscription.
+	// Examples: "query GetLaws {", "mutation CreateItem(", "query {" (anonymous).
 	pattern := regexp.MustCompile(`^\s*(?:query|mutation|subscription)\s+([A-Za-z][A-Za-z0-9_]*)\s*[({]`)
 	matches := pattern.FindStringSubmatch(query)
 	if len(matches) > 1 {
 		return matches[1]
 	}
 
-	// For shorthand queries, try to extract the first field name
+	// For shorthand queries, try to extract the first field name.
 	if strings.HasPrefix(strings.TrimSpace(query), "{") {
 		fieldPattern := regexp.MustCompile(`{\s*([A-Za-z][A-Za-z0-9_]*)\s*[({]`)
 		matches = fieldPattern.FindStringSubmatch(query)
@@ -208,7 +208,7 @@ func ApacheLoggerWithDuration(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// Extract GraphQL info before processing
+		// Extract GraphQL info before processing.
 		graphqlInfo := extractGraphQLInfo(r)
 
 		// Wrap the ResponseWriter to capture status and size.
