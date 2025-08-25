@@ -7,6 +7,9 @@ This project provides GraphQL APIs for:
 - Querying Japanese law data via GraphQL
 - Converting Japanese Standard Law XML Schema to EPUB files with status tracking
 - Searching laws by category, type, title, and keywords
+- Apache format access logging with GraphQL query details
+- Automatic job retry for stale EPUB generation requests
+- CORS support for web applications
 
 ## Quick Start
 
@@ -57,6 +60,9 @@ make build
 # Allow all origins (use with caution)
 ./jplaw2epub-api -cors-origins "*"
 
+# Disable access logging
+./jplaw2epub-api -disable-access-log
+
 # Using environment variables
 PORT=8080 CORS_ORIGINS="https://example.com" ./jplaw2epub-api
 
@@ -68,6 +74,7 @@ make run
 
 - `-port` - Server listening port (default: auto-select, falls back to PORT env var)
 - `-cors-origins` - Comma-separated list of allowed CORS origins (default: none, falls back to CORS_ORIGINS env var)
+- `-disable-access-log` - Disable Apache format access logging (default: false)
 
 ## CORS Configuration
 
@@ -261,6 +268,42 @@ Cloud Storage (epub-storage/)
 │   └── {id}.status           # Processing status
 ```
 
+## Access Logging
+
+The server includes Apache Combined Log Format access logging with GraphQL query details:
+
+### Log Format
+
+```
+remote_addr - remote_user [time_local] "request" status size "referer" "user_agent" duration
+```
+
+### GraphQL Enhanced Logging
+
+For GraphQL requests, the logger extracts and includes operation details:
+
+```apache
+# Simple query
+[::1]:52708 - - [25/Aug/2025:17:43:04 +0900] "POST /graphql HTTP/1.1 [query laws]" 200 37 - "curl/8.7.1" 1237614µs
+
+# Named operation with variables
+[::1]:53455 - - [25/Aug/2025:17:45:21 +0900] "POST /graphql HTTP/1.1 [query GetEpubStatus 1 vars]" 200 96 "http://example.com" "GraphQL-Client/1.0" 328657µs
+```
+
+**Extracted Information:**
+- Operation type (`query`, `mutation`, `subscription`)
+- Operation name (e.g., `GetEpubStatus`, `KeywordSearch`)
+- Variable count (e.g., `1 vars`)
+- Response time in microseconds
+
+### Disabling Logs
+
+To disable access logging (e.g., in production with external log aggregation):
+
+```bash
+./jplaw2epub-api -disable-access-log
+```
+
 ## Development
 
 ### Prerequisites
@@ -298,9 +341,16 @@ make all           # Run all checks and build
 ├── Makefile                # Build and development tasks
 ├── go.mod                  # Go module definition
 ├── go.sum                  # Go module checksums
+├── .env.example            # Environment variables example
+├── handlers/               # HTTP handlers and middleware
+│   ├── cors.go             # CORS middleware
+│   ├── health.go           # Health check endpoint
+│   ├── logger.go           # Apache format logger with GraphQL support
+│   └── utils.go            # Utility functions
 ├── graphql/                # GraphQL implementation
 │   ├── schema.graphqls     # GraphQL schema definition
 │   ├── resolver.go         # GraphQL resolvers
+│   ├── epub_resolver.go    # EPUB async generation resolver
 │   ├── schema.resolvers.go # Generated resolver implementations
 │   ├── converters.go       # Type converters
 │   ├── generated.go        # Generated code
