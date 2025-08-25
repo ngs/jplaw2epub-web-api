@@ -16,21 +16,32 @@ import (
 func main() {
 	portFlag := flag.String("port", "", "Port to listen on (default: find available port)")
 	corsOriginsFlag := flag.String("cors-origins", "", "Comma-separated list of allowed CORS origins (e.g., 'https://example.com,https://app.example.com')")
+	disableAccessLog := flag.Bool("disable-access-log", false, "Disable Apache format access logging")
 	flag.Parse()
 
 	port := handlers.DeterminePort(*portFlag)
 	allowedOrigins := handlers.ParseAllowedOrigins(*corsOriginsFlag)
 
-	// Wrap handlers with CORS middleware.
-	http.HandleFunc("/health", handlers.WithCORS(handlers.HealthHandler, allowedOrigins))
+	// Create a new mux for better control over middleware.
+	mux := http.NewServeMux()
+
+	// Register handlers with CORS middleware.
+	mux.HandleFunc("/health", handlers.WithCORS(handlers.HealthHandler, allowedOrigins))
 
 	// GraphQL handlers.
 	srv := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{Resolvers: graphql.NewResolver()}))
-	http.Handle("/graphql", handlers.WithCORSHandler(srv, allowedOrigins))
-	http.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql"))
+	mux.Handle("/graphql", handlers.WithCORSHandler(srv, allowedOrigins))
+	mux.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql"))
+
+	// Wrap the entire mux with Apache logger middleware unless disabled.
+	var finalHandler http.Handler = mux
+	if !*disableAccessLog {
+		finalHandler = handlers.ApacheLoggerWithDuration(mux)
+	}
 
 	server := &http.Server{
 		Addr:         ":" + port,
+		Handler:      finalHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -41,6 +52,9 @@ func main() {
 		log.Printf("CORS enabled for origins: %v", allowedOrigins)
 	} else {
 		log.Printf("CORS disabled (no origins specified)")
+	}
+	if !*disableAccessLog {
+		log.Printf("Apache format access logging enabled")
 	}
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
