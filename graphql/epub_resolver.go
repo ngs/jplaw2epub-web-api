@@ -60,23 +60,51 @@ func (r *Resolver) getEpub(ctx context.Context, id string) (*model1.Epub, error)
 		// Processing or failed.
 		defer statusReader.Close()
 
-		var status map[string]string
+		var status map[string]interface{}
 		if err := json.NewDecoder(statusReader).Decode(&status); err != nil {
 			return nil, fmt.Errorf("failed to decode status: %v", err)
 		}
 
 		epubStatus := model1.EpubStatusPending
-		switch status["status"] {
+		statusStr, _ := status["status"].(string)
+		switch statusStr {
 		case "PROCESSING":
 			epubStatus = model1.EpubStatusProcessing
 		case "FAILED":
 			epubStatus = model1.EpubStatusFailed
 		case "PENDING":
 			epubStatus = model1.EpubStatusPending
+
+			// Check if status file is stale (older than 5 minutes)
+			if createdAt, ok := status["createdAt"].(string); ok {
+				if created, err := time.Parse(time.RFC3339, createdAt); err == nil {
+					if time.Since(created) > 5*time.Minute {
+						// Stale PENDING status - trigger a new job
+						log.Printf("Stale PENDING status for %s (created %v ago), triggering new job", id, time.Since(created))
+						go triggerEpubGeneratorJob(id)
+
+						// Update status file with new timestamp
+						statusData := map[string]string{
+							"status":    "PENDING",
+							"createdAt": time.Now().Format(time.RFC3339),
+						}
+						w := statusObj.NewWriter(ctx)
+						if err := json.NewEncoder(w).Encode(statusData); err != nil {
+							log.Printf("Failed to update status file: %v", err)
+						} else {
+							w.Close()
+						}
+					}
+				}
+			} else {
+				// No createdAt field - trigger job for backward compatibility
+				log.Printf("PENDING status without createdAt for %s, triggering job", id)
+				go triggerEpubGeneratorJob(id)
+			}
 		}
 
 		var errorMsg *string
-		if e, ok := status["error"]; ok && e != "" {
+		if e, ok := status["error"].(string); ok && e != "" {
 			errorMsg = &e
 		}
 

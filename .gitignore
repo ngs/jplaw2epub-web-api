@@ -34,3 +34,4 @@ go.work
 .env
 .env.local*.json
 /jplaw2epub-api
+*.log
