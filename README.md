@@ -2,10 +2,14 @@
 
 Web API server for converting Japanese law documents to EPUB format.
 
-This project provides REST and GraphQL APIs for:
-- Converting Japanese Standard Law XML Schema to EPUB files
+This project provides GraphQL APIs for:
+- Asynchronous EPUB generation using Cloud Run Jobs (handles large files without timeouts)
 - Querying Japanese law data via GraphQL
-- Fetching and converting laws by ID
+- Converting Japanese Standard Law XML Schema to EPUB files with status tracking
+- Searching laws by category, type, title, and keywords
+- Apache format access logging with GraphQL query details
+- Automatic job retry for stale EPUB generation requests
+- CORS support for web applications
 
 ## Quick Start
 
@@ -56,6 +60,9 @@ make build
 # Allow all origins (use with caution)
 ./jplaw2epub-api -cors-origins "*"
 
+# Disable access logging
+./jplaw2epub-api -disable-access-log
+
 # Using environment variables
 PORT=8080 CORS_ORIGINS="https://example.com" ./jplaw2epub-api
 
@@ -67,6 +74,7 @@ make run
 
 - `-port` - Server listening port (default: auto-select, falls back to PORT env var)
 - `-cors-origins` - Comma-separated list of allowed CORS origins (default: none, falls back to CORS_ORIGINS env var)
+- `-disable-access-log` - Disable Apache format access logging (default: false)
 
 ## CORS Configuration
 
@@ -98,24 +106,56 @@ For production deployments, configure CORS origins using:
 
 ### REST API
 
-- **POST /convert** - Convert XML to EPUB
-  ```sh
-  curl -X POST -H "Content-Type: application/xml" \
-    --data-binary @law.xml \
-    http://localhost:8080/convert -o output.epub
-  ```
-
-- **GET /epubs/{law_id}** - Get EPUB by law ID
-  ```sh
-  curl http://localhost:8080/epubs/325AC0000000131 -o radio_act.epub
-  ```
-
 - **GET /health** - Health check endpoint
 
 ### GraphQL API
 
 - **POST/GET /graphql** - GraphQL endpoint
 - **GET /graphiql** - Interactive GraphQL playground
+
+#### EPUB Generation (Asynchronous)
+
+The API now uses asynchronous EPUB generation with Cloud Run Jobs to handle large files without timeouts:
+
+```graphql
+query GetEpub($id: String!) {
+  epub(id: $id) {
+    id
+    status      # PENDING | PROCESSING | COMPLETED | FAILED
+    signedUrl   # Download URL when completed
+    error       # Error message if failed
+  }
+}
+```
+
+Example client implementation:
+```javascript
+async function downloadEpub(id) {
+  const pollInterval = 3000; // 3 seconds
+  const maxAttempts = 100;   // Max 5 minutes
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    const { data } = await client.query({
+      query: GET_EPUB_QUERY,
+      variables: { id },
+      fetchPolicy: 'network-only'
+    });
+    
+    if (data.epub.status === 'COMPLETED') {
+      window.location.href = data.epub.signedUrl;
+      return;
+    }
+    
+    if (data.epub.status === 'FAILED') {
+      throw new Error(data.epub.error || 'EPUB generation failed');
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+  
+  throw new Error('Timeout');
+}
+```
 
 #### Example Queries
 
@@ -189,6 +229,81 @@ curl -X POST http://localhost:8080/graphql \
   -d '{"query": "{ laws(lawTitle: \"電波\", limit: 5) { totalCount laws { lawInfo { lawId lawNum } revisionInfo { lawTitle } } } }"}'
 ```
 
+## Asynchronous EPUB Generation
+
+### Architecture
+
+The API uses Cloud Run Jobs and Cloud Storage for asynchronous EPUB generation to handle large files without timeouts:
+
+```
+[Client] → [Cloud Run API] → [Cloud Run Jobs API] → [Cloud Run Job]
+               ↓                                          ↓
+         status check                              EPUB generation
+               ↓                                          ↓
+         [Cloud Storage] ←────────────────────────────────┘
+```
+
+### Setup
+
+1. **Deploy the EPUB Generation Job**: Deploy the [jplaw2epub-generate-epub-job](https://github.com/ngs/jplaw2epub-generate-epub-job) repository as a Cloud Run Job
+
+2. **Configure Environment Variables**: Set the required environment variables when deploying the API:
+   ```bash
+   gcloud run services update jplaw2epub-api \
+     --update-env-vars PROJECT_ID=YOUR_PROJECT_ID,\
+   EPUB_BUCKET_NAME=epub-storage,\
+   EPUB_JOB_NAME=epub-generator,\
+   REGION=asia-northeast1 \
+     --region=asia-northeast1
+   ```
+
+3. **Cloud Storage**: The job automatically creates and manages the storage bucket for EPUB files
+
+### File Structure
+
+```
+Cloud Storage (epub-storage/)
+├── v1.0.0/                    # App version
+│   ├── {id}.epub             # Generated EPUB
+│   └── {id}.status           # Processing status
+```
+
+## Access Logging
+
+The server includes Apache Combined Log Format access logging with GraphQL query details:
+
+### Log Format
+
+```
+remote_addr - remote_user [time_local] "request" status size "referer" "user_agent" duration
+```
+
+### GraphQL Enhanced Logging
+
+For GraphQL requests, the logger extracts and includes operation details:
+
+```apache
+# Simple query
+[::1]:52708 - - [25/Aug/2025:17:43:04 +0900] "POST /graphql HTTP/1.1 [query laws]" 200 37 - "curl/8.7.1" 1237614µs
+
+# Named operation with variables
+[::1]:53455 - - [25/Aug/2025:17:45:21 +0900] "POST /graphql HTTP/1.1 [query GetEpubStatus 1 vars]" 200 96 "http://example.com" "GraphQL-Client/1.0" 328657µs
+```
+
+**Extracted Information:**
+- Operation type (`query`, `mutation`, `subscription`)
+- Operation name (e.g., `GetEpubStatus`, `KeywordSearch`)
+- Variable count (e.g., `1 vars`)
+- Response time in microseconds
+
+### Disabling Logs
+
+To disable access logging (e.g., in production with external log aggregation):
+
+```bash
+./jplaw2epub-api -disable-access-log
+```
+
 ## Development
 
 ### Prerequisites
@@ -226,9 +341,16 @@ make all           # Run all checks and build
 ├── Makefile                # Build and development tasks
 ├── go.mod                  # Go module definition
 ├── go.sum                  # Go module checksums
+├── .env.example            # Environment variables example
+├── handlers/               # HTTP handlers and middleware
+│   ├── cors.go             # CORS middleware
+│   ├── health.go           # Health check endpoint
+│   ├── logger.go           # Apache format logger with GraphQL support
+│   └── utils.go            # Utility functions
 ├── graphql/                # GraphQL implementation
 │   ├── schema.graphqls     # GraphQL schema definition
 │   ├── resolver.go         # GraphQL resolvers
+│   ├── epub_resolver.go    # EPUB async generation resolver
 │   ├── schema.resolvers.go # Generated resolver implementations
 │   ├── converters.go       # Type converters
 │   ├── generated.go        # Generated code
@@ -409,6 +531,10 @@ See [docs/CUSTOM_DOMAIN_SETUP.md](docs/CUSTOM_DOMAIN_SETUP.md) for details.
 
 - `PORT` - Server listening port (default: auto-select)
 - `CORS_ORIGINS` - Comma-separated list of allowed CORS origins (optional)
+- `PROJECT_ID` - GCP Project ID (required for async EPUB generation)
+- `EPUB_BUCKET_NAME` - Cloud Storage bucket name for EPUB files (default: epub-storage)
+- `EPUB_JOB_NAME` - Cloud Run Job name for EPUB generation (default: epub-generator)
+- `REGION` - GCP region (default: asia-northeast1)
 
 ## Recommended Cloud Run Settings
 
@@ -435,7 +561,6 @@ gcloud run services update jplaw2epub-api --timeout 300
 
 ## Dependencies
 
-- [jplaw2epub](https://github.com/ngs/jplaw2epub) - Core EPUB conversion library
 - [jplaw-api-v2](https://go.ngs.io/jplaw-api-v2) - Japanese law API client
 - [gqlgen](https://gqlgen.com/) - GraphQL code generation
 - [golangci-lint](https://golangci-lint.run/) - Go linters aggregator

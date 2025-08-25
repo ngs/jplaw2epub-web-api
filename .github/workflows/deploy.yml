@@ -21,6 +21,8 @@ env:
   SERVICE_NAME: jplaw2epub-api
   REPOSITORY: cloud-run-source-deploy
   CORS_ORIGINS: ${{ secrets.CORS_ORIGINS || '' }}
+  EPUB_BUCKET_NAME: ${{ secrets.EPUB_BUCKET_NAME || 'epub-storage' }}
+  EPUB_JOB_NAME: ${{ secrets.EPUB_JOB_NAME || 'epub-generator' }}
 
 jobs:
   deploy:
@@ -89,7 +91,9 @@ jobs:
           if [ -n "${CORS_ORIGINS}" ]; then
             # Escape CORS_ORIGINS value for gcloud command
             # Use caret (^) as separator instead of comma for gcloud
-            ENV_VARS_CMD="--set-env-vars=^@^CORS_ORIGINS=${CORS_ORIGINS}"
+            ENV_VARS_CMD="--set-env-vars=^@^CORS_ORIGINS=${CORS_ORIGINS}@PROJECT_ID=${PROJECT_ID}@EPUB_BUCKET_NAME=${EPUB_BUCKET_NAME}@EPUB_JOB_NAME=${EPUB_JOB_NAME}@REGION=${REGION}"
+          else
+            ENV_VARS_CMD="--set-env-vars=PROJECT_ID=${PROJECT_ID},EPUB_BUCKET_NAME=${EPUB_BUCKET_NAME},EPUB_JOB_NAME=${EPUB_JOB_NAME},REGION=${REGION}"
           fi
           
           gcloud run deploy ${SERVICE_NAME} \
@@ -156,7 +160,9 @@ jobs:
           if [ -n "${CORS_ORIGINS}" ]; then
             # Escape CORS_ORIGINS value for gcloud command
             # Use caret (^) as separator instead of comma for gcloud
-            ENV_VARS_CMD="--set-env-vars=^@^CORS_ORIGINS=${CORS_ORIGINS}"
+            ENV_VARS_CMD="--set-env-vars=^@^CORS_ORIGINS=${CORS_ORIGINS}@PROJECT_ID=${PROJECT_ID}@EPUB_BUCKET_NAME=${EPUB_BUCKET_NAME}@EPUB_JOB_NAME=${EPUB_JOB_NAME}@REGION=${REGION}"
+          else
+            ENV_VARS_CMD="--set-env-vars=PROJECT_ID=${PROJECT_ID},EPUB_BUCKET_NAME=${EPUB_BUCKET_NAME},EPUB_JOB_NAME=${EPUB_JOB_NAME},REGION=${REGION}"
           fi
           
           gcloud run deploy ${SERVICE_NAME} \

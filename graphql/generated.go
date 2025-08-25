@@ -50,6 +50,13 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Epub struct {
+		Error     func(childComplexity int) int
+		ID        func(childComplexity int) int
+		SignedURL func(childComplexity int) int
+		Status    func(childComplexity int) int
+	}
+
 	KeywordItem struct {
 		LawInfo      func(childComplexity int) int
 		RevisionInfo func(childComplexity int) int
@@ -93,6 +100,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Epub      func(childComplexity int, id string) int
 		Keyword   func(childComplexity int, keyword string, lawNum *string, lawType []model.LawType, asof *string, categoryCode []model.CategoryCode, promulgateDateFrom *string, promulgateDateTo *string, limit *int, offset *int, sentencesLimit *int) int
 		Laws      func(childComplexity int, lawID *string, lawNum *string, lawTitle *string, lawTitleKana *string, lawType []model.LawType, asof *string, categoryCode []model.CategoryCode, promulgateDateFrom *string, promulgateDateTo *string, limit *int, offset *int) int
 		Revisions func(childComplexity int, lawID string, lawTitle *string, lawTitleKana *string, amendmentLawID *string, amendmentDateFrom *string, amendmentDateTo *string, categoryCode []model.CategoryCode, updatedFrom *string, updatedTo *string) int
@@ -134,6 +142,7 @@ type QueryResolver interface {
 	Laws(ctx context.Context, lawID *string, lawNum *string, lawTitle *string, lawTitleKana *string, lawType []model.LawType, asof *string, categoryCode []model.CategoryCode, promulgateDateFrom *string, promulgateDateTo *string, limit *int, offset *int) (*lawapi.LawsResponse, error)
 	Revisions(ctx context.Context, lawID string, lawTitle *string, lawTitleKana *string, amendmentLawID *string, amendmentDateFrom *string, amendmentDateTo *string, categoryCode []model.CategoryCode, updatedFrom *string, updatedTo *string) (*lawapi.LawRevisionsResponse, error)
 	Keyword(ctx context.Context, keyword string, lawNum *string, lawType []model.LawType, asof *string, categoryCode []model.CategoryCode, promulgateDateFrom *string, promulgateDateTo *string, limit *int, offset *int, sentencesLimit *int) (*lawapi.KeywordResponse, error)
+	Epub(ctx context.Context, id string) (*model.Epub, error)
 }
 type RevisionInfoResolver interface {
 	LawType(ctx context.Context, obj *lawapi.RevisionInfo) (*model.LawType, error)
@@ -166,6 +175,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Epub.error":
+		if e.complexity.Epub.Error == nil {
+			break
+		}
+
+		return e.complexity.Epub.Error(childComplexity), true
+
+	case "Epub.id":
+		if e.complexity.Epub.ID == nil {
+			break
+		}
+
+		return e.complexity.Epub.ID(childComplexity), true
+
+	case "Epub.signedUrl":
+		if e.complexity.Epub.SignedURL == nil {
+			break
+		}
+
+		return e.complexity.Epub.SignedURL(childComplexity), true
+
+	case "Epub.status":
+		if e.complexity.Epub.Status == nil {
+			break
+		}
+
+		return e.complexity.Epub.Status(childComplexity), true
 
 	case "KeywordItem.lawInfo":
 		if e.complexity.KeywordItem.LawInfo == nil {
@@ -334,6 +371,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LawsResponse.TotalCount(childComplexity), true
+
+	case "Query.epub":
+		if e.complexity.Query.Epub == nil {
+			break
+		}
+
+		args, err := ec.field_Query_epub_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Epub(childComplexity, args["id"].(string)), true
 
 	case "Query.keyword":
 		if e.complexity.Query.Keyword == nil {
@@ -616,6 +665,17 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_epub_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_keyword_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -629,7 +689,7 @@ func (ec *executionContext) field_Query_keyword_args(ctx context.Context, rawArg
 		return nil, err
 	}
 	args["lawNum"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "lawType", ec.unmarshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawTypeᚄ)
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "lawType", ec.unmarshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawTypeᚄ)
 	if err != nil {
 		return nil, err
 	}
@@ -639,7 +699,7 @@ func (ec *executionContext) field_Query_keyword_args(ctx context.Context, rawArg
 		return nil, err
 	}
 	args["asof"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "categoryCode", ec.unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCodeᚄ)
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "categoryCode", ec.unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCodeᚄ)
 	if err != nil {
 		return nil, err
 	}
@@ -695,7 +755,7 @@ func (ec *executionContext) field_Query_laws_args(ctx context.Context, rawArgs m
 		return nil, err
 	}
 	args["lawTitleKana"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "lawType", ec.unmarshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawTypeᚄ)
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "lawType", ec.unmarshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawTypeᚄ)
 	if err != nil {
 		return nil, err
 	}
@@ -705,7 +765,7 @@ func (ec *executionContext) field_Query_laws_args(ctx context.Context, rawArgs m
 		return nil, err
 	}
 	args["asof"] = arg5
-	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "categoryCode", ec.unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCodeᚄ)
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "categoryCode", ec.unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCodeᚄ)
 	if err != nil {
 		return nil, err
 	}
@@ -766,7 +826,7 @@ func (ec *executionContext) field_Query_revisions_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["amendmentDateTo"] = arg5
-	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "categoryCode", ec.unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCodeᚄ)
+	arg6, err := graphql.ProcessArgField(ctx, rawArgs, "categoryCode", ec.unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCodeᚄ)
 	if err != nil {
 		return nil, err
 	}
@@ -835,6 +895,176 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Epub_id(ctx context.Context, field graphql.CollectedField, obj *model.Epub) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Epub_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Epub_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Epub",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Epub_signedUrl(ctx context.Context, field graphql.CollectedField, obj *model.Epub) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Epub_signedUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SignedURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Epub_signedUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Epub",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Epub_status(ctx context.Context, field graphql.CollectedField, obj *model.Epub) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Epub_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.EpubStatus)
+	fc.Result = res
+	return ec.marshalNEpubStatus2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐEpubStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Epub_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Epub",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type EpubStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Epub_error(ctx context.Context, field graphql.CollectedField, obj *model.Epub) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Epub_error(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Error, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Epub_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Epub",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _KeywordItem_lawInfo(ctx context.Context, field graphql.CollectedField, obj *lawapi.KeywordItem) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_KeywordItem_lawInfo(ctx, field)
@@ -1405,7 +1635,7 @@ func (ec *executionContext) _LawInfo_lawNumEra(ctx context.Context, field graphq
 	}
 	res := resTmp.(*model.LawNumEra)
 	fc.Result = res
-	return ec.marshalOLawNumEra2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawNumEra(ctx, field.Selections, res)
+	return ec.marshalOLawNumEra2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawNumEra(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_LawInfo_lawNumEra(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1534,7 +1764,7 @@ func (ec *executionContext) _LawInfo_lawNumType(ctx context.Context, field graph
 	}
 	res := resTmp.(*model.LawNumType)
 	fc.Result = res
-	return ec.marshalOLawNumType2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawNumType(ctx, field.Selections, res)
+	return ec.marshalOLawNumType2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawNumType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_LawInfo_lawNumType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1575,7 +1805,7 @@ func (ec *executionContext) _LawInfo_lawType(ctx context.Context, field graphql.
 	}
 	res := resTmp.(*model.LawType)
 	fc.Result = res
-	return ec.marshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawType(ctx, field.Selections, res)
+	return ec.marshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_LawInfo_lawType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2219,6 +2449,71 @@ func (ec *executionContext) fieldContext_Query_keyword(ctx context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_epub(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_epub(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Epub(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Epub)
+	fc.Result = res
+	return ec.marshalNEpub2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐEpub(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_epub(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Epub_id(ctx, field)
+			case "signedUrl":
+				return ec.fieldContext_Epub_signedUrl(ctx, field)
+			case "status":
+				return ec.fieldContext_Epub_status(ctx, field)
+			case "error":
+				return ec.fieldContext_Epub_error(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Epub", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_epub_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -2551,7 +2846,7 @@ func (ec *executionContext) _RevisionInfo_lawType(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.LawType)
 	fc.Result = res
-	return ec.marshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawType(ctx, field.Selections, res)
+	return ec.marshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_RevisionInfo_lawType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2944,7 +3239,7 @@ func (ec *executionContext) _RevisionInfo_currentRevisionStatus(ctx context.Cont
 	}
 	res := resTmp.(*model.CurrentRevisionStatus)
 	fc.Result = res
-	return ec.marshalOCurrentRevisionStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCurrentRevisionStatus(ctx, field.Selections, res)
+	return ec.marshalOCurrentRevisionStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCurrentRevisionStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_RevisionInfo_currentRevisionStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2985,7 +3280,7 @@ func (ec *executionContext) _RevisionInfo_repealStatus(ctx context.Context, fiel
 	}
 	res := resTmp.(*model.RepealStatus)
 	fc.Result = res
-	return ec.marshalORepealStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐRepealStatus(ctx, field.Selections, res)
+	return ec.marshalORepealStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐRepealStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_RevisionInfo_repealStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3026,7 +3321,7 @@ func (ec *executionContext) _RevisionInfo_mission(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.Mission)
 	fc.Result = res
-	return ec.marshalOMission2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐMission(ctx, field.Selections, res)
+	return ec.marshalOMission2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐMission(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_RevisionInfo_mission(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5141,6 +5436,54 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** object.gotpl ****************************
 
+var epubImplementors = []string{"Epub"}
+
+func (ec *executionContext) _Epub(ctx context.Context, sel ast.SelectionSet, obj *model.Epub) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, epubImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Epub")
+		case "id":
+			out.Values[i] = ec._Epub_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "signedUrl":
+			out.Values[i] = ec._Epub_signedUrl(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._Epub_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "error":
+			out.Values[i] = ec._Epub_error(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var keywordItemImplementors = []string{"KeywordItem"}
 
 func (ec *executionContext) _KeywordItem(ctx context.Context, sel ast.SelectionSet, obj *lawapi.KeywordItem) graphql.Marshaler {
@@ -5638,6 +5981,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_keyword(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "epub":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_epub(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -6426,13 +6791,37 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNCategoryCode2goᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCode(ctx context.Context, v any) (model.CategoryCode, error) {
+func (ec *executionContext) unmarshalNCategoryCode2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCode(ctx context.Context, v any) (model.CategoryCode, error) {
 	var res model.CategoryCode
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNCategoryCode2goᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCode(ctx context.Context, sel ast.SelectionSet, v model.CategoryCode) graphql.Marshaler {
+func (ec *executionContext) marshalNCategoryCode2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCode(ctx context.Context, sel ast.SelectionSet, v model.CategoryCode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNEpub2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐEpub(ctx context.Context, sel ast.SelectionSet, v model.Epub) graphql.Marshaler {
+	return ec._Epub(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNEpub2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐEpub(ctx context.Context, sel ast.SelectionSet, v *model.Epub) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Epub(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNEpubStatus2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐEpubStatus(ctx context.Context, v any) (model.EpubStatus, error) {
+	var res model.EpubStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNEpubStatus2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐEpubStatus(ctx context.Context, sel ast.SelectionSet, v model.EpubStatus) graphql.Marshaler {
 	return v
 }
 
@@ -6630,13 +7019,13 @@ func (ec *executionContext) marshalNLawItem2ᚕgoᚗngsᚗioᚋjplawᚑapiᚑv2�
 	return ret
 }
 
-func (ec *executionContext) unmarshalNLawType2goᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawType(ctx context.Context, v any) (model.LawType, error) {
+func (ec *executionContext) unmarshalNLawType2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawType(ctx context.Context, v any) (model.LawType, error) {
 	var res model.LawType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNLawType2goᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawType(ctx context.Context, sel ast.SelectionSet, v model.LawType) graphql.Marshaler {
+func (ec *executionContext) marshalNLawType2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawType(ctx context.Context, sel ast.SelectionSet, v model.LawType) graphql.Marshaler {
 	return v
 }
 
@@ -7015,7 +7404,7 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCodeᚄ(ctx context.Context, v any) ([]model.CategoryCode, error) {
+func (ec *executionContext) unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCodeᚄ(ctx context.Context, v any) ([]model.CategoryCode, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -7025,7 +7414,7 @@ func (ec *executionContext) unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epub
 	res := make([]model.CategoryCode, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNCategoryCode2goᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCode(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNCategoryCode2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCode(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -7033,7 +7422,7 @@ func (ec *executionContext) unmarshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epub
 	return res, nil
 }
 
-func (ec *executionContext) marshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCodeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.CategoryCode) graphql.Marshaler {
+func (ec *executionContext) marshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCodeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.CategoryCode) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -7060,7 +7449,7 @@ func (ec *executionContext) marshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epub�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNCategoryCode2goᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCategoryCode(ctx, sel, v[i])
+			ret[i] = ec.marshalNCategoryCode2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCategoryCode(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -7080,7 +7469,7 @@ func (ec *executionContext) marshalOCategoryCode2ᚕgoᚗngsᚗioᚋjplaw2epub�
 	return ret
 }
 
-func (ec *executionContext) unmarshalOCurrentRevisionStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCurrentRevisionStatus(ctx context.Context, v any) (*model.CurrentRevisionStatus, error) {
+func (ec *executionContext) unmarshalOCurrentRevisionStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCurrentRevisionStatus(ctx context.Context, v any) (*model.CurrentRevisionStatus, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -7089,7 +7478,7 @@ func (ec *executionContext) unmarshalOCurrentRevisionStatus2ᚖgoᚗngsᚗioᚋj
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOCurrentRevisionStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐCurrentRevisionStatus(ctx context.Context, sel ast.SelectionSet, v *model.CurrentRevisionStatus) graphql.Marshaler {
+func (ec *executionContext) marshalOCurrentRevisionStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐCurrentRevisionStatus(ctx context.Context, sel ast.SelectionSet, v *model.CurrentRevisionStatus) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -7121,7 +7510,7 @@ func (ec *executionContext) marshalOLawInfo2ᚖgoᚗngsᚗioᚋjplawᚑapiᚑv2�
 	return ec._LawInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOLawNumEra2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawNumEra(ctx context.Context, v any) (*model.LawNumEra, error) {
+func (ec *executionContext) unmarshalOLawNumEra2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawNumEra(ctx context.Context, v any) (*model.LawNumEra, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -7130,14 +7519,14 @@ func (ec *executionContext) unmarshalOLawNumEra2ᚖgoᚗngsᚗioᚋjplaw2epubᚋ
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOLawNumEra2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawNumEra(ctx context.Context, sel ast.SelectionSet, v *model.LawNumEra) graphql.Marshaler {
+func (ec *executionContext) marshalOLawNumEra2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawNumEra(ctx context.Context, sel ast.SelectionSet, v *model.LawNumEra) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return v
 }
 
-func (ec *executionContext) unmarshalOLawNumType2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawNumType(ctx context.Context, v any) (*model.LawNumType, error) {
+func (ec *executionContext) unmarshalOLawNumType2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawNumType(ctx context.Context, v any) (*model.LawNumType, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -7146,14 +7535,14 @@ func (ec *executionContext) unmarshalOLawNumType2ᚖgoᚗngsᚗioᚋjplaw2epub�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOLawNumType2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawNumType(ctx context.Context, sel ast.SelectionSet, v *model.LawNumType) graphql.Marshaler {
+func (ec *executionContext) marshalOLawNumType2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawNumType(ctx context.Context, sel ast.SelectionSet, v *model.LawNumType) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return v
 }
 
-func (ec *executionContext) unmarshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawTypeᚄ(ctx context.Context, v any) ([]model.LawType, error) {
+func (ec *executionContext) unmarshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawTypeᚄ(ctx context.Context, v any) ([]model.LawType, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -7163,7 +7552,7 @@ func (ec *executionContext) unmarshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgr
 	res := make([]model.LawType, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNLawType2goᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawType(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNLawType2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawType(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -7171,7 +7560,7 @@ func (ec *executionContext) unmarshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgr
 	return res, nil
 }
 
-func (ec *executionContext) marshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LawType) graphql.Marshaler {
+func (ec *executionContext) marshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LawType) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -7198,7 +7587,7 @@ func (ec *executionContext) marshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgrap
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLawType2goᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawType(ctx, sel, v[i])
+			ret[i] = ec.marshalNLawType2goᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawType(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -7218,7 +7607,7 @@ func (ec *executionContext) marshalOLawType2ᚕgoᚗngsᚗioᚋjplaw2epubᚋgrap
 	return ret
 }
 
-func (ec *executionContext) unmarshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawType(ctx context.Context, v any) (*model.LawType, error) {
+func (ec *executionContext) unmarshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawType(ctx context.Context, v any) (*model.LawType, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -7227,14 +7616,14 @@ func (ec *executionContext) unmarshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgr
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐLawType(ctx context.Context, sel ast.SelectionSet, v *model.LawType) graphql.Marshaler {
+func (ec *executionContext) marshalOLawType2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐLawType(ctx context.Context, sel ast.SelectionSet, v *model.LawType) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return v
 }
 
-func (ec *executionContext) unmarshalOMission2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐMission(ctx context.Context, v any) (*model.Mission, error) {
+func (ec *executionContext) unmarshalOMission2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐMission(ctx context.Context, v any) (*model.Mission, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -7243,14 +7632,14 @@ func (ec *executionContext) unmarshalOMission2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgr
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOMission2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐMission(ctx context.Context, sel ast.SelectionSet, v *model.Mission) graphql.Marshaler {
+func (ec *executionContext) marshalOMission2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐMission(ctx context.Context, sel ast.SelectionSet, v *model.Mission) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return v
 }
 
-func (ec *executionContext) unmarshalORepealStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐRepealStatus(ctx context.Context, v any) (*model.RepealStatus, error) {
+func (ec *executionContext) unmarshalORepealStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐRepealStatus(ctx context.Context, v any) (*model.RepealStatus, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -7259,7 +7648,7 @@ func (ec *executionContext) unmarshalORepealStatus2ᚖgoᚗngsᚗioᚋjplaw2epub
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalORepealStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚋgraphqlᚋmodelᚐRepealStatus(ctx context.Context, sel ast.SelectionSet, v *model.RepealStatus) graphql.Marshaler {
+func (ec *executionContext) marshalORepealStatus2ᚖgoᚗngsᚗioᚋjplaw2epubᚑwebᚑapiᚋgraphqlᚋmodelᚐRepealStatus(ctx context.Context, sel ast.SelectionSet, v *model.RepealStatus) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

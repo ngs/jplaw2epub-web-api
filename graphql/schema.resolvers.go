@@ -183,6 +183,11 @@ func (r *queryResolver) Keyword(ctx context.Context, keyword string, lawNum *str
 	return r.Resolver.client.GetKeyword(params)
 }
 
+// Epub is the resolver for the epub field.
+func (r *queryResolver) Epub(ctx context.Context, id string) (*model1.Epub, error) {
+	return r.Resolver.getEpub(ctx, id)
+}
+
 // LawType is the resolver for the lawType field.
 func (r *revisionInfoResolver) LawType(ctx context.Context, obj *lawapi.RevisionInfo) (*model1.LawType, error) {
 	return convertLawTypeToModel(obj.LawType), nil

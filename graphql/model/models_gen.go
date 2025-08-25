@@ -9,6 +9,13 @@ import (
 	"strconv"
 )
 
+type Epub struct {
+	ID        string     `json:"id"`
+	SignedURL *string    `json:"signedUrl,omitempty"`
+	Status    EpubStatus `json:"status"`
+	Error     *string    `json:"error,omitempty"`
+}
+
 type Query struct {
 }
 
@@ -217,6 +224,65 @@ func (e *CurrentRevisionStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e CurrentRevisionStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type EpubStatus string
+
+const (
+	EpubStatusPending    EpubStatus = "PENDING"
+	EpubStatusProcessing EpubStatus = "PROCESSING"
+	EpubStatusCompleted  EpubStatus = "COMPLETED"
+	EpubStatusFailed     EpubStatus = "FAILED"
+)
+
+var AllEpubStatus = []EpubStatus{
+	EpubStatusPending,
+	EpubStatusProcessing,
+	EpubStatusCompleted,
+	EpubStatusFailed,
+}
+
+func (e EpubStatus) IsValid() bool {
+	switch e {
+	case EpubStatusPending, EpubStatusProcessing, EpubStatusCompleted, EpubStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e EpubStatus) String() string {
+	return string(e)
+}
+
+func (e *EpubStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = EpubStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid EpubStatus", str)
+	}
+	return nil
+}
+
+func (e EpubStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *EpubStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e EpubStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
