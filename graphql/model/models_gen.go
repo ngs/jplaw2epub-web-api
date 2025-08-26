@@ -12,6 +12,7 @@ import (
 type Epub struct {
 	ID        string     `json:"id"`
 	SignedURL *string    `json:"signedUrl,omitempty"`
+	Size      *int       `json:"size,omitempty"`
 	Status    EpubStatus `json:"status"`
 	Error     *string    `json:"error,omitempty"`
 }
