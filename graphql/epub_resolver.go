@@ -37,7 +37,7 @@ func (r *Resolver) getEpub(ctx context.Context, id string) (*model1.Epub, error)
 
 	// Check if EPUB file exists.
 	epubObj := bucket.Object(epubPath)
-	_, err = epubObj.Attrs(ctx)
+	attrs, err := epubObj.Attrs(ctx)
 
 	if err == nil {
 		// EPUB exists - generate signed URL.
@@ -46,9 +46,13 @@ func (r *Resolver) getEpub(ctx context.Context, id string) (*model1.Epub, error)
 			return nil, fmt.Errorf("failed to generate signed URL: %v", signErr)
 		}
 
+		// Convert size from int64 to *int for GraphQL.
+		size := int(attrs.Size)
+
 		return &model1.Epub{
 			ID:        id,
 			SignedURL: &signedURL,
+			Size:      &size,
 			Status:    model1.EpubStatusCompleted,
 		}, nil
 	}
