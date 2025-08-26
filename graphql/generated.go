@@ -17,7 +17,6 @@ import (
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	lawapi "go.ngs.io/jplaw-api-v2"
-
 	"go.ngs.io/jplaw2epub-web-api/graphql/model"
 )
 
@@ -54,6 +53,7 @@ type ComplexityRoot struct {
 		Error     func(childComplexity int) int
 		ID        func(childComplexity int) int
 		SignedURL func(childComplexity int) int
+		Size      func(childComplexity int) int
 		Status    func(childComplexity int) int
 	}
 
@@ -196,6 +196,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Epub.SignedURL(childComplexity), true
+
+	case "Epub.size":
+		if e.complexity.Epub.Size == nil {
+			break
+		}
+
+		return e.complexity.Epub.Size(childComplexity), true
 
 	case "Epub.status":
 		if e.complexity.Epub.Status == nil {
@@ -976,6 +983,47 @@ func (ec *executionContext) fieldContext_Epub_signedUrl(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Epub_size(ctx context.Context, field graphql.CollectedField, obj *model.Epub) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Epub_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Epub_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Epub",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2492,6 +2540,8 @@ func (ec *executionContext) fieldContext_Query_epub(ctx context.Context, field g
 				return ec.fieldContext_Epub_id(ctx, field)
 			case "signedUrl":
 				return ec.fieldContext_Epub_signedUrl(ctx, field)
+			case "size":
+				return ec.fieldContext_Epub_size(ctx, field)
 			case "status":
 				return ec.fieldContext_Epub_status(ctx, field)
 			case "error":
@@ -5454,6 +5504,8 @@ func (ec *executionContext) _Epub(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "signedUrl":
 			out.Values[i] = ec._Epub_signedUrl(ctx, field, obj)
+		case "size":
+			out.Values[i] = ec._Epub_size(ctx, field, obj)
 		case "status":
 			out.Values[i] = ec._Epub_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

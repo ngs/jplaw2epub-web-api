@@ -212,7 +212,7 @@ type Query {
     offset: Int = 0
     sentencesLimit: Int = 10
   ): KeywordResponse!
-  
+
   epub(id: String!): Epub!
 }
 
@@ -221,6 +221,7 @@ type Query {
 type Epub {
   id: String!
   signedUrl: String
+  size: Int
   status: EpubStatus!
   error: String
 }
